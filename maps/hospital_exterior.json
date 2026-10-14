@@ -1,0 +1,120 @@
+{
+  "id": "hospital_exterior",
+  "name": "Caverna de Valdris",
+  "description": "Exterior del hospital: una gran caverna subterránea donde se levanta la fachada del hospital. Recorrido: túnel de entrada desde el sur (tapado por un derrumbe: no se puede volver) -> caverna con el cofre de la entrada, la maraña de raíces (Blaze) y la plataforma alta (Hero) -> charca de cristales al oeste -> puerta del hospital (escena aparte: hospital_lobby).",
+  "size": [2000, 1800],
+
+  "spawns": {
+    "default": [670, 1680],
+    "from_hospital": [1000, 1000]
+  },
+
+  "walkable": [
+    [960, 900, 80, 60],
+    [560, 960, 880, 480],
+    [1440, 1200, 160, 120],
+    [380, 1100, 180, 240],
+    [920, 1440, 160, 120],
+    [600, 1520, 480, 120],
+    [600, 1640, 140, 160]
+  ],
+
+  "forest": {
+    "style": "cave", "seed": 33, "spacing": 54, "pine_ratio": 0.6,
+    "exclude": [[480, 780, 1040, 120]]
+  },
+
+  "ground": {
+    "seed": 13,
+    "theme": "cave",
+    "areas": [
+      { "type": "stone", "rect": [1160, 1270, 160, 70] },
+      { "type": "tiles", "rect": [960, 900, 80, 70] }
+    ],
+    "paths": [
+      { "style": "cave", "width": 70, "points": [[670, 1820], [670, 1580], [1000, 1580], [1000, 1000]] },
+      { "style": "cave", "width": 36, "points": [[1000, 1230], [700, 1170]] }
+    ],
+    "details": [
+      { "type": "puddles", "rect": [400, 1140, 140, 170], "count": 7 },
+      { "type": "puddles", "rect": [640, 1540, 400, 80], "count": 4 },
+      { "type": "pebbles", "rect": [580, 980, 840, 440], "count": 60 },
+      { "type": "pebbles", "rect": [600, 1520, 480, 260], "count": 25 }
+    ]
+  },
+
+  "walls": [
+    { "rect": [480, 900, 480, 60], "style": "hospital", "height": 130,
+      "note": "Fachada del hospital, excavada en la roca. La puerta es el hueco central." },
+    { "rect": [1040, 900, 480, 60], "style": "hospital", "height": 130 },
+
+    { "rect": [600, 1740, 140, 60], "style": "rubble", "height": 70,
+      "note": "Derrumbe: por ahora no se puede volver atrás (antes aquí estaba la salida al bosque)." },
+    { "rect": [1140, 1250, 200, 20], "style": "cave", "height": 40, "note": "Plataforma alta: solo se llega saltando con Hero." },
+    { "rect": [1140, 1340, 200, 20], "style": "cave", "height": 40 },
+    { "rect": [1140, 1270, 20, 70], "style": "cave", "height": 40 },
+    { "rect": [1320, 1270, 20, 70], "style": "cave", "height": 40 }
+  ],
+
+  "obstacles": [
+    { "type": "stalagmite", "pos": [620, 1060], "variant": 2 },
+    { "type": "stalagmite", "pos": [1380, 1080], "variant": 0 },
+    { "type": "stalagmite", "pos": [760, 1380], "variant": 1 },
+    { "type": "rubble", "pos": [820, 1300] },
+    { "type": "rubble", "pos": [1240, 1180] },
+    { "type": "cave_rock", "pos": [1350, 1380], "variant": 0 },
+    { "type": "cave_rock", "pos": [1180, 1400], "variant": 1 },
+    { "type": "cave_rock", "pos": [880, 1632], "variant": 0 },
+    { "type": "crystal", "pos": [600, 1400], "variant": 0 },
+    { "type": "crystal", "pos": [420, 1130], "variant": 1 },
+    { "type": "crystal", "pos": [520, 1300], "variant": 0 },
+    { "type": "crystal", "pos": [1560, 1225], "variant": 1 }
+  ],
+
+  "decorations": [
+    { "type": "glowshroom", "pos": [700, 1080] },
+    { "type": "glowshroom", "pos": [1300, 1120] },
+    { "type": "glowshroom", "pos": [880, 1420] },
+    { "type": "glowshroom", "pos": [650, 1700] },
+    { "type": "glowshroom", "pos": [1050, 1500] },
+    { "type": "glowshroom", "pos": [460, 1220] }
+  ],
+
+  "interactables": [
+    { "type": "leaf_wall", "id": "hojas_patio", "name": "Maraña de raíces", "style": "roots",
+      "rect": [1425, 1195, 30, 130], "height": 70,
+      "note": "Habilidad de aventura de BLAZE: quemar. Detrás, un rincón con un cofre." },
+    { "type": "chest", "id": "cofre_hojas", "pos": [1530, 1270], "item": "ether", "item_name": "un Éter" },
+
+    { "type": "jump_spot", "id": "salto_plataforma", "pos": [1240, 1400], "target": [1240, 1315], "verb": "Saltar arriba",
+      "note": "Habilidad de aventura de HERO: saltar a la plataforma alta." },
+    { "type": "jump_spot", "id": "salto_bajar", "pos": [1290, 1312], "target": [1290, 1400], "verb": "Saltar abajo" },
+    { "type": "chest", "id": "cofre_plataforma", "pos": [1190, 1305], "item": "hero_badge", "item_name": "una Insignia de héroe" },
+
+    { "type": "sign", "id": "cartel_hospital", "name": "Cartel oxidado", "pos": [1130, 1020],
+      "text": ["HOSPITAL DE VALDRIS", "Cerrado por orden sanitaria. Prohibido el paso."] },
+
+    { "type": "chest", "id": "cofre_patio", "pos": [680, 1160], "item": "potion", "item_name": "una Poción",
+      "note": "Como en el original: un cofre fuera, antes de entrar." },
+
+    { "type": "sign", "id": "pintadas_cueva", "name": "Pintadas en la roca", "verb": "Mirar", "pos": [470, 1180],
+      "text": ["Alguien ha rayado la roca con un cuchillo:",
+               "«Construyeron el hospital bajo tierra para que nadie oyera nada.»"] }
+  ],
+
+  "triggers": [
+    { "id": "derrumbe", "rect": [600, 1700, 140, 20], "style": "info", "once": false,
+      "message": "Un derrumbe tapa la salida de la cueva. No hay vuelta atrás." },
+    { "id": "caverna", "rect": [920, 1440, 160, 20], "style": "discovery",
+      "message": "El túnel se abre en una caverna enorme. Al fondo, la fachada de un hospital." }
+  ],
+
+  "exits": [
+    { "rect": [960, 900, 80, 16], "target_map": "hospital_lobby", "target_spawn": "from_exterior",
+      "message": "La puerta del hospital está atrancada." }
+  ],
+
+  "notes": [
+    { "pos": [1000, 930], "text": "Puerta del hospital (cambia de escena)." }
+  ]
+}

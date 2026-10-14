@@ -1,0 +1,100 @@
+{
+  "id": "hospital_piso2",
+  "name": "Hospital · Piso 2",
+  "description": "A oscuras, con Fire Wolves. Parte A (suroeste): llegas desde el Piso 1, pero la energía no está aquí: hay que subir al Piso 3 y bajar por otra escalera. Parte B: energía, ascensor, Juggernog y, al fondo, la carta Fire Bolt.",
+  "size": [2400, 1800],
+  "spawns": {
+    "default": [1200, 800],
+    "elevator": [1200, 800],
+    "s3": [1100, 1280],
+    "s4": [340, 840],
+    "s5": [2060, 380],
+    "s6": [340, 380]
+  },
+  "walkable": [
+    [240, 240, 1920, 1320]
+  ],
+  "ground": {
+    "seed": 14,
+    "background": "void",
+    "areas": [
+      {"type": "tiles", "rect": [240, 240, 1920, 1320]},
+      {"type": "stairs", "rect": [1040, 1140, 120, 90]},
+      {"type": "stairs", "rect": [280, 700, 120, 90]},
+      {"type": "stairs", "rect": [2000, 240, 120, 90]},
+      {"type": "stairs", "rect": [280, 240, 120, 90]}
+    ]
+  },
+  "walls": [
+    {"rect": [200, 200, 2000, 40], "style": "hospital", "height": 80},
+    {"rect": [200, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [2160, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [240, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [560, 660, 80, 40], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WN y WM."},
+    {"rect": [240, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 660, 40, 40], "style": "hospital", "height": 70},
+    {"rect": [1120, 660, 280, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1240, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1160, 1100, 80, 40], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre CM y CS."},
+    {"rect": [1400, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [960, 240, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 490, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 240, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 490, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 860, 40, 80], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WM y CM."},
+    {"rect": [1400, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [1400, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 1140, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 1390, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 1140, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 1390, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 1310, 40, 80], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre CS y ES."},
+    {"rect": [200, 1560, 2000, 40], "style": "hospital", "height": 80}
+  ],
+  "obstacles": [
+    {"type": "bed", "pos": [312, 1497]},
+    {"type": "rubble", "pos": [1340, 1266]},
+    {"type": "rubble", "pos": [888, 1060]},
+    {"type": "bed", "pos": [888, 597]},
+    {"type": "cabinet", "pos": [1060, 618]},
+    {"type": "bed", "pos": [1512, 597]},
+    {"type": "cabinet", "pos": [1512, 1060]},
+    {"type": "rubble", "pos": [1512, 1518]}
+  ],
+  "interactables": [
+    {"type": "elevator", "id": "ascensor", "rect": [1160, 700, 80, 40], "height": 90, "group": "hospital", "floor": "hospital_piso2", "note": "Ascensor: necesita la energía de este piso (maps/elevators.json)."},
+    {"type": "sign", "id": "cartel_s3", "name": "Escalera", "pos": [1018, 1190], "text": ["Escalera: baja al Piso 1."]},
+    {"type": "sign", "id": "cartel_s4", "name": "Escalera", "pos": [430, 750], "text": ["Escalera: sube al Piso 3."]},
+    {"type": "sign", "id": "cartel_s5", "name": "Escalera", "pos": [1970, 290], "text": ["Escalera: sube al Piso 3 (rellano oeste)."]},
+    {"type": "sign", "id": "cartel_s6", "name": "Escalera", "pos": [430, 290], "text": ["Escalera: sube al Piso 3 (ala norte)."]},
+    {"type": "secret_object", "id": "energia_hospital_piso2", "name": "Activador de energía", "pos": [1300, 492], "sprite": "generator_off", "verb": "Activar", "stage_sprites": {"0": "generator_off", "1": "generator_on"}, "stages": ["Un cuadro eléctrico con una palanca enorme: «PISO 2». La bajas con todas tus fuerzas..."], "idle_text": "El cuadro zumba. Este piso tiene corriente.", "unlocks_secret": "energia_p2", "unlock_stage": 1},
+    {"type": "chest", "id": "cofre_fire_bolt", "pos": [2088, 1476], "card": "fire_bolt"},
+    {"type": "perk_machine", "id": "perk_2", "perk": "juggernog", "name": "Juggernog", "floor": 2, "pos": [2052, 840], "note": "Máquina de ventajas: se encienden en el orden del cuarto secreto del lobby."},
+    {"type": "enemy", "name": "Fire Wolf", "sprite": "wolf_fire", "deck": "fire_wolf", "character": "fire_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_fuego_1", "pos": [672, 1392]},
+    {"type": "enemy", "name": "Fire Wolf", "sprite": "wolf_fire", "deck": "fire_wolf", "character": "fire_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_fuego_2", "pos": [780, 980]},
+    {"type": "enemy", "name": "Fire Wolf", "sprite": "wolf_fire", "deck": "fire_wolf", "character": "fire_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_fuego_3", "pos": [1060, 1040]},
+    {"type": "enemy", "name": "Fire Wolf", "sprite": "wolf_fire", "deck": "fire_wolf", "character": "fire_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_fuego_4", "pos": [1728, 1350]},
+    {"type": "sign", "id": "aviso_p2", "name": "Cartel chamuscado", "pos": [1280, 1497], "text": ["«PELIGRO: animales sueltos en la planta 2.»", "Las marcas de garras están calientes al tacto."]}
+  ],
+  "secrets": [
+    {"id": "energia_p2", "name": "Energía · Piso 2", "unlock_message": "¡Corriente en el Piso 2! Se encienden las luces y el ascensor funciona."}
+  ],
+  "hidden_areas": [
+    {"rect": [240, 240, 1920, 1320], "style": "dark", "secret": "energia_p2"}
+  ],
+  "triggers": [],
+  "exits": [
+    {"rect": [1040, 1140, 120, 24], "target_map": "hospital_piso1", "target_spawn": "s3", "note": "Escalera: baja al Piso 1."},
+    {"rect": [280, 700, 120, 24], "target_map": "hospital_piso3", "target_spawn": "s4", "note": "Escalera: sube al Piso 3."},
+    {"rect": [2000, 240, 120, 24], "target_map": "hospital_piso3", "target_spawn": "s5", "note": "Escalera: sube al Piso 3 (rellano oeste)."},
+    {"rect": [280, 240, 120, 24], "target_map": "hospital_piso3", "target_spawn": "s6", "note": "Escalera: sube al Piso 3 (ala norte)."}
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "id": "hospital_piso4",
+  "name": "Hospital · Piso 4",
+  "description": "Solo se llega en ascensor, con las cuatro energías activas (entonces también hay luz). Elemental Wolf en la sala norte; detrás de su verja, la llave de acceso al cuarto secreto del lobby. Double Tap en la sala oeste.",
+  "size": [2400, 1800],
+  "spawns": {
+    "default": [1200, 800],
+    "elevator": [1200, 800]
+  },
+  "walkable": [
+    [240, 240, 1920, 1320]
+  ],
+  "ground": {
+    "seed": 14,
+    "background": "void",
+    "areas": [
+      {"type": "tiles", "rect": [240, 240, 1920, 1320]}
+    ]
+  },
+  "walls": [
+    {"rect": [200, 200, 2000, 40], "style": "hospital", "height": 80},
+    {"rect": [200, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [2160, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [240, 660, 760, 40], "style": "hospital", "height": 70},
+    {"rect": [240, 1100, 760, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 660, 40, 40], "style": "hospital", "height": 70},
+    {"rect": [1120, 660, 280, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 1100, 400, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 660, 760, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 1100, 760, 40], "style": "hospital", "height": 70},
+    {"rect": [960, 240, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [1400, 240, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 490, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [1400, 700, 40, 400], "style": "hospital", "height": 70},
+    {"rect": [960, 1140, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [1400, 1140, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [200, 1560, 2000, 40], "style": "hospital", "height": 80}
+  ],
+  "obstacles": [
+    {"type": "pillar", "pos": [1048, 366]},
+    {"type": "pillar", "pos": [1352, 366]},
+    {"type": "rubble", "pos": [1352, 1040]},
+    {"type": "cabinet", "pos": [888, 1060]},
+    {"type": "rubble", "pos": [600, 450]},
+    {"type": "rubble", "pos": [1800, 1350]}
+  ],
+  "interactables": [
+    {"type": "elevator", "id": "ascensor", "rect": [1160, 700, 80, 40], "height": 90, "group": "hospital", "floor": "hospital_piso4", "note": "Ascensor: necesita la energía de este piso (maps/elevators.json)."},
+    {"type": "secret_door", "id": "verja_tesoro", "name": "Verja", "style": "gate", "secret": "lobo_vencido", "height": 60, "hidden_text": ["Una verja sellada con escarcha. Está helada al tacto."], "rect": [1400, 410, 40, 80]},
+    {"type": "enemy", "id": "elemental_wolf", "name": "Elemental Wolf", "pos": [1200, 430], "sprite": "wolf_ghost", "verb": "Enfrentarse", "deck": "elemental_wolf", "character": "elemental_wolf", "aggression": 0.3, "randomness": 0.35, "behavior": "guard", "aggro": 0, "can_flee": false, "intro": ["Un lobo espectral te cierra el paso. Medio cuerpo le arde; el otro medio está cubierto de escarcha.", "Ruge. El aire se congela a tu alrededor... y un instante después quema."], "victory": ["No retrocedes. El lobo te sostiene la mirada durante una eternidad...", "...y se deshace en una nube de chispas y nieve."], "unlocks_secret": "lobo_vencido"},
+    {"type": "chest", "id": "cofre_llave", "pos": [2052, 408], "item": "llave_acceso", "item_name": "la Llave de acceso", "note": "Abre la Sala del personal del lobby (el cuarto secreto)."},
+    {"type": "chest", "id": "cofre_p4", "pos": [1872, 408], "item": "gold_medal", "item_name": "una Medalla de oro"},
+    {"type": "perk_machine", "id": "perk_4", "perk": "double_tap", "name": "Double Tap", "floor": 4, "pos": [384, 860], "note": "Máquina de ventajas: se encienden en el orden del cuarto secreto del lobby."},
+    {"type": "sign", "id": "nota_p4", "name": "Diario", "verb": "Leer", "pos": [1656, 555], "text": ["«La llave del personal está aquí arriba, con el lobo.»", "«Abajo, en la sala del personal, dejé apuntado el orden de las máquinas.»"]}
+  ],
+  "secrets": [
+    {"id": "lobo_vencido", "name": "El lobo fantasma", "unlock_message": "El lobo fantasma ha desaparecido. La escarcha de la verja se derrite."}
+  ],
+  "hidden_areas": [
+    {"rect": [240, 240, 1920, 1320], "style": "dark", "secret": ["energia_lobby", "energia_p1", "energia_p2", "energia_p3"]}
+  ],
+  "triggers": [
+    {"id": "aviso_lobo", "rect": [1040, 640, 80, 40], "style": "discovery", "message": "Algo te observa desde la sala del norte..."}
+  ],
+  "exits": []
+}

@@ -1,0 +1,208 @@
+{
+  "id": "forest",
+  "name": "Bosque de Arken",
+  "size": [3600, 2200],
+
+  "spawns": {
+    "default": [70, 1200],
+    "from_village": [3500, 1060]
+  },
+
+  "walkable": [
+    [0, 1040, 600, 320],
+    [480, 920, 480, 400],
+    [880, 940, 1120, 280],
+    [1320, 840, 520, 480],
+    [1960, 1000, 360, 320],
+    [2240, 1040, 760, 300],
+    [2920, 920, 400, 400],
+    [3240, 920, 360, 280],
+
+    [2000, 600, 120, 420],
+    [1760, 340, 640, 300],
+    [2040, 300, 80, 40],
+    [1880, 80, 400, 220],
+
+    [1520, 1300, 120, 380],
+    [1160, 1420, 400, 200],
+    [1620, 1440, 260, 200],
+    [1440, 1640, 280, 160],
+    [1540, 1800, 80, 30],
+    [1440, 1830, 280, 160],
+
+    [2680, 1320, 120, 260],
+    [2560, 1560, 360, 240]
+  ],
+
+  "forest": { "seed": 7, "spacing": 50, "pine_ratio": 0.25 },
+
+  "ground": {
+    "seed": 3,
+    "areas": [
+      { "type": "stone", "rect": [1800, 345, 560, 270] },
+      { "type": "stone", "rect": [1950, 100, 260, 190] },
+      { "type": "stairs", "rect": [1520, 1870, 120, 110] }
+    ],
+    "paths": [
+      { "style": "main", "width": 110,
+        "points": [[-20, 1200], [460, 1200], [780, 1080], [1880, 1080], [2140, 1180], [2880, 1180], [3140, 1060], [3640, 1060]] },
+      { "style": "trail", "width": 54, "points": [[2060, 1110], [2060, 700], [2080, 560], [2080, 340]] },
+      { "style": "trail", "width": 54, "points": [[1580, 1110], [1580, 1800]] },
+      { "style": "trail", "width": 42, "points": [[1580, 1520], [1240, 1520]] },
+      { "style": "faint", "points": [[1600, 1540], [1780, 1560]] },
+      { "style": "faint", "points": [[2740, 1220], [2740, 1600], [2770, 1690]] }
+    ],
+    "details": [
+      { "type": "flowers", "rect": [20, 1060, 520, 280], "count": 26 },
+      { "type": "flowers", "rect": [2010, 960, 110, 60], "count": 8 },
+      { "type": "flowers", "rect": [1340, 860, 480, 440], "count": 22 },
+      { "type": "flowers", "rect": [3250, 940, 330, 240], "count": 30 },
+      { "type": "flowers", "rect": [1960, 110, 240, 170], "count": 20 },
+      { "type": "mushrooms", "rect": [1170, 1430, 300, 180], "count": 12 },
+      { "type": "mushrooms", "rect": [2570, 1570, 340, 220], "count": 10 },
+      { "type": "pebbles", "rect": [1450, 1650, 260, 140], "count": 25 }
+    ]
+  },
+
+  "walls": [
+    { "rect": [1760, 300, 280, 40], "style": "ruin", "height": 76 },
+    { "rect": [2120, 300, 280, 40], "style": "ruin", "height": 76 },
+    { "rect": [1760, 340, 40, 150], "style": "ruin", "height": 60 },
+    { "rect": [2360, 340, 40, 110], "style": "ruin", "height": 52 },
+    { "rect": [1800, 600, 160, 30], "style": "ruin", "height": 34 },
+    { "rect": [2180, 600, 180, 30], "style": "ruin", "height": 28 },
+
+    { "rect": [1440, 1800, 100, 30], "style": "stone", "height": 64 },
+    { "rect": [1620, 1800, 100, 30], "style": "stone", "height": 64 }
+  ],
+
+  "obstacles": [
+    { "type": "rock", "pos": [300, 1320] },
+    { "type": "bush", "pos": [180, 1070] },
+    { "type": "rock", "pos": [850, 1290] },
+    { "type": "log", "pos": [1110, 990] },
+    { "type": "stump", "pos": [1400, 905] },
+    { "type": "rock", "pos": [1790, 900] },
+    { "type": "bush", "pos": [1720, 1290] },
+    { "type": "bush", "pos": [1380, 1280] },
+    { "type": "tree", "pos": [1420, 1240], "variant": 1 },
+    { "type": "tree", "pos": [2420, 1310], "variant": 3 },
+    { "type": "rock", "pos": [2520, 1075] },
+    { "type": "tree", "pos": [3010, 970], "variant": 2 },
+    { "type": "rock", "pos": [3290, 1290] },
+    { "type": "bush", "pos": [2960, 1300] },
+
+    { "type": "tree", "pos": [1990, 420], "variant": 0 },
+    { "type": "tree", "pos": [2170, 420], "variant": 2 },
+    { "type": "pillar", "pos": [1860, 470] },
+    { "type": "pillar_broken", "pos": [2300, 480] },
+    { "type": "pillar_broken", "pos": [1900, 380] },
+
+    { "type": "rock", "pos": [1190, 1450] },
+    { "type": "log", "pos": [1420, 1605] },
+    { "type": "stump", "pos": [1840, 1610] },
+
+    { "type": "stump", "pos": [2610, 1610] },
+    { "type": "log", "pos": [2860, 1780] },
+    { "type": "rock", "pos": [2600, 1770] }
+  ],
+
+  "decorations": [
+    { "type": "tall_grass", "pos": [2700, 1345] },
+    { "type": "tall_grass", "pos": [2780, 1340] },
+    { "type": "tall_grass", "pos": [2735, 1375] },
+    { "type": "tall_grass", "pos": [2650, 1700] },
+    { "type": "tall_grass", "pos": [2880, 1620] },
+    { "type": "tall_grass", "pos": [1270, 1600] },
+    { "type": "tall_grass", "pos": [520, 960] },
+    { "type": "tall_grass", "pos": [2040, 630] },
+    { "type": "tall_grass", "pos": [2100, 650] }
+  ],
+
+  "interactables": [
+    { "type": "sign", "id": "sign_entrance", "name": "Cartel", "pos": [380, 1120],
+      "text": ["Bosque de Arken.", "Al este: Aldea de Vell. Sigue el camino."] },
+
+    { "type": "npc", "id": "brann", "name": "Brann, el leñador", "look": "woodcutter", "pos": [1520, 1010],
+      "dialogue": [
+        "¡Buenas! No se ven muchos viajeros por el Bosque de Arken.",
+        "El camino hacia el este está despejado; la aldea está justo al salir del bosque.",
+        "Aunque... juraría haber escuchado algo detrás de las ruinas del norte."
+      ],
+      "repeat_dialogue": [
+        "Sigue el camino hacia el este y llegarás a la aldea.",
+        "Y si te sobra tiempo... echa un vistazo a esas ruinas."
+      ],
+      "conditional_dialogue": [
+        { "requires_secret": "arken_shrine",
+          "pages": ["¿Un paso oculto en las ruinas? Llevo veinte años cortando leña aquí y nunca lo vi..."] }
+      ]
+    },
+
+    { "type": "chest", "id": "chest_potion", "pos": [1240, 1520], "item": "potion", "item_name": "una Poción" },
+
+    { "type": "npc", "id": "mira", "name": "Mira, la viajera", "look": "traveler", "pos": [1800, 1530],
+      "dialogue": [
+        "Shh... ¿lo oyes? Hay algo que zumba al sureste del bosque.",
+        "Yo no tocaría aparatos raros. Pero tú tienes cara de tocarlo todo."
+      ],
+      "repeat_dialogue": ["Al sureste. Entre la hierba alta. No digas que no te avisé."],
+      "conditional_dialogue": [
+        { "requires_secret": "arken_shrine",
+          "pages": ["Ese zumbido ha parado. ¿Qué has hecho?"] }
+      ]
+    },
+
+    { "type": "door", "id": "rusty_gate", "name": "Verja oxidada", "style": "gate",
+      "rect": [1540, 1800, 80, 30], "height": 64, "locked": true, "key": "rusty_key",
+      "locked_text": ["Está cerrada.", "Al otro lado, unas escaleras bajan hacia la oscuridad."] },
+
+    { "type": "sign", "id": "ruins_tablet", "name": "Inscripción", "sprite": "tablet", "pos": [2250, 555],
+      "text": ["Las letras están muy gastadas...", "«...solo quien escuche la voz del bosque encontrará el paso...»"] },
+
+    { "type": "secret_door", "id": "ruins_secret_door", "name": "Muro con hiedra", "secret": "arken_shrine",
+      "rect": [2040, 300, 80, 40], "height": 76,
+      "hidden_text": ["Un trozo de muro cubierto de hiedra espesa.", "Se nota una corriente de aire frío entre las hojas..."] },
+
+    { "type": "secret_object", "id": "old_radio", "name": "Radio vieja", "pos": [2780, 1690],
+      "sprite": "radio_off",
+      "stage_sprites": { "0": "radio_off", "2": "radio_static", "4": "radio_on" },
+      "stages": [
+        "Una radio vieja. No parece funcionar.",
+        "Se escucha estática...",
+        "...¿Eso fue una voz?",
+        "01001000..."
+      ],
+      "idle_text": "La radio zumba suavemente. Parece... satisfecha.",
+      "unlocks_secret": "arken_shrine",
+      "unlock_stage": 4 },
+
+    { "type": "sign", "id": "shrine", "name": "Altar antiguo", "sprite": "shrine", "verb": "Examinar",
+      "pos": [2080, 170],
+      "text": ["Un altar cubierto de musgo. La gema brilla con una luz fría.",
+               "Grabado en la piedra: 01001000 01001111 01001100 01000001"] },
+
+    { "type": "chest", "id": "chest_amulet", "pos": [1950, 190], "item": "arken_amulet", "item_name": "el Amuleto de Arken" },
+
+    { "type": "sign", "id": "sign_exit", "name": "Cartel", "pos": [3420, 985],
+      "text": ["Aldea de Vell: justo delante."] }
+  ],
+
+  "secrets": [
+    { "id": "arken_shrine", "name": "Santuario oculto", "unlock_message": "Has descubierto algo oculto..." }
+  ],
+
+  "hidden_areas": [
+    { "rect": [1850, 30, 460, 232] }
+  ],
+
+  "triggers": [
+    { "id": "ruins_area", "rect": [1760, 340, 640, 260], "message": "Antiguas ruinas", "style": "area" },
+    { "id": "secret_area", "rect": [1880, 80, 400, 200], "message": "Área secreta descubierta.", "style": "discovery" }
+  ],
+
+  "exits": [
+    { "rect": [3570, 920, 30, 280], "target_map": "village", "target_spawn": "from_forest",
+      "message": "Has llegado al final de la zona." }
+  ]
+}

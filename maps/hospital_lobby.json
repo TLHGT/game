@@ -1,0 +1,102 @@
+{
+  "id": "hospital_lobby",
+  "name": "Hospital · Lobby",
+  "description": "Planta de entrada, con luz y drones. Parte A: entrada, vestíbulo del ascensor y ala oeste (escalera al Piso 1). Parte B (ala este): energía del lobby y la palanca del portón; se llega bajando desde el Piso 1. Cuarto secreto (WN): se abre con la llave del Piso 4.",
+  "size": [2400, 1800],
+  "spawns": {
+    "default": [1200, 1500],
+    "elevator": [1200, 800],
+    "from_exterior": [1200, 1500],
+    "s1": [340, 840],
+    "s2": [2060, 380],
+    "s2b": [2060, 1280]
+  },
+  "walkable": [
+    [240, 240, 1920, 1320],
+    [1160, 1560, 80, 40]
+  ],
+  "ground": {
+    "seed": 14,
+    "background": "void",
+    "areas": [
+      {"type": "tiles", "rect": [240, 240, 1920, 1320]},
+      {"type": "stairs", "rect": [280, 700, 120, 90]},
+      {"type": "stairs", "rect": [2000, 240, 120, 90]},
+      {"type": "stairs", "rect": [2000, 1140, 120, 90]},
+      {"type": "tiles", "rect": [1160, 1560, 80, 80]}
+    ]
+  },
+  "walls": [
+    {"rect": [200, 200, 2000, 40], "style": "hospital", "height": 80},
+    {"rect": [200, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [2160, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [240, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [240, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 660, 40, 40], "style": "hospital", "height": 70},
+    {"rect": [1120, 660, 280, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1240, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [960, 240, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [1400, 240, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [960, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [1400, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [1400, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 1140, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 1390, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 1140, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [200, 1560, 960, 40], "style": "hospital", "height": 80},
+    {"rect": [1240, 1560, 960, 40], "style": "hospital", "height": 80}
+  ],
+  "obstacles": [
+    {"type": "pillar", "pos": [1060, 920]},
+    {"type": "pillar", "pos": [1340, 920]},
+    {"type": "pillar", "pos": [1048, 1266]},
+    {"type": "pillar", "pos": [1352, 1266]},
+    {"type": "cabinet", "pos": [312, 1518]},
+    {"type": "bed", "pos": [888, 1497]},
+    {"type": "cabinet", "pos": [2088, 1060]},
+    {"type": "cabinet", "pos": [312, 618]},
+    {"type": "rubble", "pos": [2052, 618]},
+    {"type": "cabinet", "pos": [888, 1068]},
+    {"type": "bed", "pos": [1512, 1497]}
+  ],
+  "interactables": [
+    {"type": "elevator", "id": "ascensor", "rect": [1160, 700, 80, 40], "height": 90, "group": "hospital", "floor": "hospital_lobby", "note": "Ascensor: necesita la energía de este piso (maps/elevators.json)."},
+    {"type": "door", "id": "puerta_secreta", "name": "Sala del personal", "style": "metal", "height": 70, "key": "llave_acceso", "locked_text": ["SALA DEL PERSONAL. Acceso restringido.", "Hay un lector de tarjetas junto a la puerta."], "rect": [560, 660, 80, 40]},
+    {"type": "secret_door", "id": "porton_lobby", "name": "Portón", "style": "gate", "secret": "porton_lobby", "height": 60, "hidden_text": ["Un portón de rejas cerrado con cadena.", "Al otro lado se ve una palanca. Habrá que llegar por otro camino."], "rect": [1400, 860, 40, 80]},
+    {"type": "sign", "id": "cartel_s1", "name": "Escalera", "pos": [430, 750], "text": ["Escalera: sube al Piso 1."]},
+    {"type": "sign", "id": "cartel_s2", "name": "Escalera", "pos": [1970, 290], "text": ["Escalera: sube al Piso 1 (ala oeste)."]},
+    {"type": "sign", "id": "cartel_s2b", "name": "Escalera", "pos": [1970, 1190], "text": ["Escalera: sube al Piso 1 (ala este)."]},
+    {"type": "secret_object", "id": "energia_hospital_lobby", "name": "Activador de energía", "pos": [1656, 555], "sprite": "generator_off", "verb": "Activar", "stage_sprites": {"0": "generator_off", "1": "generator_on"}, "stages": ["Un cuadro eléctrico con una palanca enorme: «LOBBY». La bajas con todas tus fuerzas..."], "idle_text": "El cuadro zumba. Este piso tiene corriente.", "unlocks_secret": "energia_lobby", "unlock_stage": 1},
+    {"type": "secret_object", "id": "palanca_porton", "name": "Palanca del portón", "pos": [1520, 960], "sprite": "switch_off", "stage_sprites": {"0": "switch_off", "1": "switch_on"}, "verb": "Tirar", "stages": ["Una palanca oxidada con un cartel: «PORTÓN». Tiras de ella..."], "idle_text": "El portón ya está abierto.", "unlocks_secret": "porton_lobby", "unlock_stage": 1},
+    {"type": "sign", "id": "directorio", "name": "Directorio", "pos": [1300, 1250], "text": ["LOBBY · Ascensor en el centro. Escaleras en las alas oeste y este.", "Cada planta tiene su propio activador de energía para el ascensor.", "PISO 4: acceso solo con todas las plantas en marcha."]},
+    {"type": "perk_code", "id": "ordenador", "name": "Ordenador", "sprite": "monitor", "verb": "Mirar", "pos": [420, 300], "text": ["La pantalla se enciende con un zumbido. Letras verdes sobre fondo negro:", "SECUENCIA DE ARRANQUE DE LAS MÁQUINAS (PISOS): {code}", "ADVERTENCIA: UN ARRANQUE FUERA DE ORDEN REINICIA TODAS LAS MÁQUINAS.", "(La secuencia cambia en cada partida.)"], "note": "La secuencia es aleatoria en cada partida (systems/perk_puzzle.py)."},
+    {"type": "pack_a_punch", "id": "pack_a_punch", "pos": [760, 330], "item": "pack_a_punch", "item_name": "una Lata de Pack-a-Punch", "note": "Recompensa del puzle de las máquinas de ventajas (pendiente: darle un uso)."},
+    {"type": "sign", "id": "nota_personal", "name": "Nota", "pos": [560, 560], "text": ["«Máquinas instaladas: una por planta, del 1 al 4.»", "«La grande solo arranca si las encendemos en el orden que marca el ordenador.»"]},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "patrol", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_lobby_1", "pos": [1100, 1266], "patrol": [[1080, 1200], [1320, 1200]]},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "wander", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_lobby_2", "pos": [600, 1392]},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "wander", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_lobby_3", "pos": [1728, 1434]}
+  ],
+  "secrets": [
+    {"id": "energia_lobby", "name": "Energía · Lobby", "unlock_message": "¡Corriente en el Lobby! El ascensor funciona."},
+    {"id": "porton_lobby", "name": "Portón del lobby", "unlock_message": "El portón se abre con un chirrido: atajo hacia la entrada."},
+    {"id": "perks_completas", "name": "Máquinas de ventajas", "unlock_message": "Se oye una melodía lejana: la máquina del cuarto secreto del lobby se ha encendido."}
+  ],
+  "hidden_areas": [],
+  "triggers": [
+    {"id": "entrada_lobby", "rect": [1080, 1440, 240, 30], "style": "info", "message": "El lobby huele a desinfectante viejo. Las luces todavía funcionan."}
+  ],
+  "exits": [
+    {"rect": [1160, 1588, 80, 12], "target_map": "hospital_exterior", "target_spawn": "from_hospital", "note": "Puerta principal: a la caverna."},
+    {"rect": [280, 700, 120, 24], "target_map": "hospital_piso1", "target_spawn": "s1", "note": "Escalera: sube al Piso 1."},
+    {"rect": [2000, 240, 120, 24], "target_map": "hospital_piso1", "target_spawn": "s2", "note": "Escalera: sube al Piso 1 (ala oeste)."},
+    {"rect": [2000, 1140, 120, 24], "target_map": "hospital_piso1", "target_spawn": "s2b", "note": "Escalera: sube al Piso 1 (ala este)."}
+  ]
+}

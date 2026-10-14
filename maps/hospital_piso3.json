@@ -1,0 +1,93 @@
+{
+  "id": "hospital_piso3",
+  "name": "Hospital · Piso 3",
+  "description": "A oscuras, con Ice Wolves. Parte A: un rellano al oeste con dos escaleras (a las dos partes del Piso 2). Parte B: se llega desde el Piso 2 B; energía, ascensor y Speed Cola.",
+  "size": [2400, 1800],
+  "spawns": {
+    "default": [1200, 800],
+    "elevator": [1200, 800],
+    "s4": [340, 840],
+    "s5": [860, 840],
+    "s6": [340, 380]
+  },
+  "walkable": [
+    [240, 240, 1920, 1320]
+  ],
+  "ground": {
+    "seed": 14,
+    "background": "void",
+    "areas": [
+      {"type": "tiles", "rect": [240, 240, 1920, 1320]},
+      {"type": "stairs", "rect": [280, 700, 120, 90]},
+      {"type": "stairs", "rect": [800, 700, 120, 90]},
+      {"type": "stairs", "rect": [280, 240, 120, 90]}
+    ]
+  },
+  "walls": [
+    {"rect": [200, 200, 2000, 40], "style": "hospital", "height": 80},
+    {"rect": [200, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [2160, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [240, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [560, 660, 80, 40], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WN y WM."},
+    {"rect": [240, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [560, 1100, 80, 40], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WM y WS."},
+    {"rect": [1000, 660, 40, 40], "style": "hospital", "height": 70},
+    {"rect": [1120, 660, 280, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1240, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [960, 240, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 490, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 240, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 490, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 860, 40, 80], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WM y CM."},
+    {"rect": [1400, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [1400, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 1140, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 1390, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 1140, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [1400, 1390, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [200, 1560, 2000, 40], "style": "hospital", "height": 80}
+  ],
+  "obstacles": [
+    {"type": "rubble", "pos": [312, 1068]},
+    {"type": "bed", "pos": [888, 597]},
+    {"type": "cabinet", "pos": [1040, 618]},
+    {"type": "bed", "pos": [1512, 597]},
+    {"type": "cabinet", "pos": [2088, 1060]},
+    {"type": "bed", "pos": [1512, 1497]},
+    {"type": "rubble", "pos": [888, 1497]}
+  ],
+  "interactables": [
+    {"type": "elevator", "id": "ascensor", "rect": [1160, 700, 80, 40], "height": 90, "group": "hospital", "floor": "hospital_piso3", "note": "Ascensor: necesita la energía de este piso (maps/elevators.json)."},
+    {"type": "sign", "id": "cartel_s4", "name": "Escalera", "pos": [430, 750], "text": ["Escalera: baja al Piso 2."]},
+    {"type": "sign", "id": "cartel_s5", "name": "Escalera", "pos": [770, 750], "text": ["Escalera: baja al Piso 2 (ala este)."]},
+    {"type": "sign", "id": "cartel_s6", "name": "Escalera", "pos": [430, 290], "text": ["Escalera: baja al Piso 2 (ala norte)."]},
+    {"type": "secret_object", "id": "energia_hospital_piso3", "name": "Activador de energía", "pos": [2052, 1434], "sprite": "generator_off", "verb": "Activar", "stage_sprites": {"0": "generator_off", "1": "generator_on"}, "stages": ["Un cuadro eléctrico con una palanca enorme: «PISO 3». La bajas con todas tus fuerzas..."], "idle_text": "El cuadro zumba. Este piso tiene corriente.", "unlocks_secret": "energia_p3", "unlock_stage": 1},
+    {"type": "perk_machine", "id": "perk_3", "perk": "speed_cola", "name": "Speed Cola", "floor": 3, "pos": [384, 1308], "note": "Máquina de ventajas: se encienden en el orden del cuarto secreto del lobby."},
+    {"type": "enemy", "name": "Ice Wolf", "sprite": "wolf_ice", "deck": "ice_wolf", "character": "ice_wolf", "behavior": "guard", "radius": 120, "aggro": 110, "speed": 80, "can_flee": true, "id": "lobo_hielo_1", "pos": [600, 1040], "note": "Vigila el rellano: si pasas pegado a las escaleras no te ve."},
+    {"type": "enemy", "name": "Ice Wolf", "sprite": "wolf_ice", "deck": "ice_wolf", "character": "ice_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_hielo_2", "pos": [1200, 492]},
+    {"type": "enemy", "name": "Ice Wolf", "sprite": "wolf_ice", "deck": "ice_wolf", "character": "ice_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_hielo_3", "pos": [1800, 940]},
+    {"type": "enemy", "name": "Ice Wolf", "sprite": "wolf_ice", "deck": "ice_wolf", "character": "ice_wolf", "behavior": "wander", "radius": 120, "aggro": 170, "speed": 80, "can_flee": true, "id": "lobo_hielo_4", "pos": [1200, 1392]},
+    {"type": "chest", "id": "cofre_p3", "pos": [2088, 345], "item": "ether", "item_name": "un Éter"}
+  ],
+  "secrets": [
+    {"id": "energia_p3", "name": "Energía · Piso 3", "unlock_message": "¡Corriente en el Piso 3! Se encienden las luces y el ascensor funciona."}
+  ],
+  "hidden_areas": [
+    {"rect": [240, 240, 1920, 1320], "style": "dark", "secret": "energia_p3"}
+  ],
+  "triggers": [],
+  "exits": [
+    {"rect": [280, 700, 120, 24], "target_map": "hospital_piso2", "target_spawn": "s4", "note": "Escalera: baja al Piso 2."},
+    {"rect": [800, 700, 120, 24], "target_map": "hospital_piso2", "target_spawn": "s5", "note": "Escalera: baja al Piso 2 (ala este)."},
+    {"rect": [280, 240, 120, 24], "target_map": "hospital_piso2", "target_spawn": "s6", "note": "Escalera: baja al Piso 2 (ala norte)."}
+  ]
+}

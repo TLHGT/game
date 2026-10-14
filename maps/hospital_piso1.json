@@ -1,0 +1,98 @@
+{
+  "id": "hospital_piso1",
+  "name": "Hospital · Piso 1",
+  "description": "A oscuras, con drones. Parte A (ala oeste): llegas desde el lobby y bajas al ala este del lobby. Parte B (centro y este): energía, ascensor, Quick Revive y, al fondo, la carta Ice Shard.",
+  "size": [2400, 1800],
+  "spawns": {
+    "default": [1200, 800],
+    "elevator": [1200, 800],
+    "s1": [340, 840],
+    "s2": [340, 380],
+    "s2b": [2060, 1280],
+    "s3": [1100, 1280]
+  },
+  "walkable": [
+    [240, 240, 1920, 1320]
+  ],
+  "ground": {
+    "seed": 14,
+    "background": "void",
+    "areas": [
+      {"type": "tiles", "rect": [240, 240, 1920, 1320]},
+      {"type": "stairs", "rect": [280, 700, 120, 90]},
+      {"type": "stairs", "rect": [280, 240, 120, 90]},
+      {"type": "stairs", "rect": [2000, 1140, 120, 90]},
+      {"type": "stairs", "rect": [1040, 1140, 120, 90]}
+    ]
+  },
+  "walls": [
+    {"rect": [200, 200, 2000, 40], "style": "hospital", "height": 80},
+    {"rect": [200, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [2160, 240, 40, 1360], "style": "hospital", "height": 80},
+    {"rect": [240, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [240, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [640, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 660, 40, 40], "style": "hospital", "height": 70},
+    {"rect": [1120, 660, 280, 40], "style": "hospital", "height": 70},
+    {"rect": [1000, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1240, 1100, 160, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 660, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 660, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [1400, 1100, 360, 40], "style": "hospital", "height": 70},
+    {"rect": [1840, 1100, 320, 40], "style": "hospital", "height": 70},
+    {"rect": [960, 240, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 490, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 410, 40, 80], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WN y CN."},
+    {"rect": [1400, 240, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [960, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 860, 40, 80], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WM y CM."},
+    {"rect": [1400, 700, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [1400, 940, 40, 160], "style": "hospital", "height": 70},
+    {"rect": [960, 1140, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 1390, 40, 170], "style": "hospital", "height": 70},
+    {"rect": [960, 1310, 40, 80], "style": "rubble", "height": 60, "note": "Derrumbe: paso bloqueado entre WS y CS."},
+    {"rect": [1400, 1140, 40, 420], "style": "hospital", "height": 70},
+    {"rect": [200, 1560, 2000, 40], "style": "hospital", "height": 80}
+  ],
+  "obstacles": [
+    {"type": "bed", "pos": [312, 1497]},
+    {"type": "bed", "pos": [888, 1497]},
+    {"type": "cabinet", "pos": [888, 1068]},
+    {"type": "rubble", "pos": [888, 618]},
+    {"type": "bed", "pos": [1060, 597]},
+    {"type": "cabinet", "pos": [1512, 1518]},
+    {"type": "bed", "pos": [1512, 1040]},
+    {"type": "rubble", "pos": [1360, 1497]},
+    {"type": "cabinet", "pos": [1512, 626]}
+  ],
+  "interactables": [
+    {"type": "elevator", "id": "ascensor", "rect": [1160, 700, 80, 40], "height": 90, "group": "hospital", "floor": "hospital_piso1", "note": "Ascensor: necesita la energía de este piso (maps/elevators.json)."},
+    {"type": "sign", "id": "cartel_s1", "name": "Escalera", "pos": [430, 750], "text": ["Escalera: baja al Lobby."]},
+    {"type": "sign", "id": "cartel_s2", "name": "Escalera", "pos": [430, 290], "text": ["Escalera: baja al Lobby (ala este)."]},
+    {"type": "sign", "id": "cartel_s2b", "name": "Escalera", "pos": [1970, 1190], "text": ["Escalera: baja al Lobby (ala este)."]},
+    {"type": "sign", "id": "cartel_s3", "name": "Escalera", "pos": [1018, 1190], "text": ["Escalera: sube al Piso 2."]},
+    {"type": "secret_object", "id": "energia_hospital_piso1", "name": "Activador de energía", "pos": [1300, 492], "sprite": "generator_off", "verb": "Activar", "stage_sprites": {"0": "generator_off", "1": "generator_on"}, "stages": ["Un cuadro eléctrico con una palanca enorme: «PISO 1». La bajas con todas tus fuerzas..."], "idle_text": "El cuadro zumba. Este piso tiene corriente.", "unlocks_secret": "energia_p1", "unlock_stage": 1},
+    {"type": "chest", "id": "cofre_ice_shard", "pos": [2088, 345], "card": "ice_shard"},
+    {"type": "perk_machine", "id": "perk_1", "perk": "quick_revive", "name": "Quick Revive", "floor": 1, "pos": [2052, 840], "note": "Máquina de ventajas: se encienden en el orden del cuarto secreto del lobby."},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "wander", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_p1_1", "pos": [672, 1371]},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "wander", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_p1_2", "pos": [780, 492]},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "wander", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_p1_3", "pos": [1728, 940]},
+    {"type": "enemy", "name": "Dron de seguridad", "sprite": "npc_droid", "deck": "security_droid", "character": "security_droid", "hp": 60, "aggression": -0.2, "behavior": "patrol", "radius": 140, "aggro": 140, "speed": 60, "intro": ["BZZT. ZONA RESTRINGIDA. IDENTIFÍQUESE.", "...IDENTIFICACIÓN NO ENCONTRADA. ACTIVANDO PROTOCOLO DE DEFENSA."], "victory": ["BZZT... QUE TENGA... UN BUEN... DÍA."], "id": "dron_p1_4", "pos": [1656, 492], "patrol": [[1560, 520], [1960, 520]]},
+    {"type": "sign", "id": "nota_p1", "name": "Nota arrugada", "pos": [1080, 1040], "text": ["«Si se va la luz, el ascensor se queda en la planta.»", "«Cada planta tiene su cuadro eléctrico. Búscalo a tientas.»"]}
+  ],
+  "secrets": [
+    {"id": "energia_p1", "name": "Energía · Piso 1", "unlock_message": "¡Corriente en el Piso 1! Se encienden las luces y el ascensor funciona."}
+  ],
+  "hidden_areas": [
+    {"rect": [240, 240, 1920, 1320], "style": "dark", "secret": "energia_p1"}
+  ],
+  "triggers": [],
+  "exits": [
+    {"rect": [280, 700, 120, 24], "target_map": "hospital_lobby", "target_spawn": "s1", "note": "Escalera: baja al Lobby."},
+    {"rect": [280, 240, 120, 24], "target_map": "hospital_lobby", "target_spawn": "s2", "note": "Escalera: baja al Lobby (ala este)."},
+    {"rect": [2000, 1140, 120, 24], "target_map": "hospital_lobby", "target_spawn": "s2b", "note": "Escalera: baja al Lobby (ala este)."},
+    {"rect": [1040, 1140, 120, 24], "target_map": "hospital_piso2", "target_spawn": "s3", "note": "Escalera: sube al Piso 2."}
+  ]
+}

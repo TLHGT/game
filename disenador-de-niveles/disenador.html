@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diseñador de niveles</title>
+<style>
+  :root {
+    --bg: #15191d; --panel: #1e2328; --panel2: #262c32; --line: #343b42;
+    --text: #e8e4d8; --dim: #9aa19f; --accent: #e8c46e; --danger: #e06c5c; --ok: #7cc47a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.4 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  header { height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 15px; margin: 0 12px 0 0; white-space: nowrap; }
+  header .sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
+  header .status { margin-left: auto; color: var(--dim); white-space: nowrap; }
+  .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px;
+    cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: #56606a; }
+  .btn.primary { background: var(--accent); color: #1b1b1b; border-color: var(--accent); font-weight: 600; }
+  .btn.danger { color: var(--danger); }
+  main { display: grid; grid-template-columns: 210px 1fr 300px; height: calc(100% - 46px); }
+  aside { background: var(--panel); overflow-y: auto; }
+  #palette { border-right: 1px solid var(--line); padding: 8px; }
+  #panel { border-left: 1px solid var(--line); padding: 10px 12px 40px; }
+  .group-title { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    margin: 12px 4px 4px; }
+  .tool { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 5px 8px;
+    margin: 1px 0; border-radius: 6px; border: 1px solid transparent; background: none; cursor: pointer; }
+  .tool:hover { background: var(--panel2); }
+  .tool.active { background: #3a3424; border-color: var(--accent); }
+  .tool .ico { width: 22px; text-align: center; font-size: 16px; font-family: "Segoe UI Emoji", sans-serif; }
+  .tool .key { margin-left: auto; color: var(--dim); font-size: 11px; }
+  .brush { display: flex; gap: 4px; padding: 2px 8px 6px 38px; }
+  .brush button { flex: 1; padding: 2px 0; font-size: 11px; }
+  .brush button.active { border-color: var(--accent); }
+  #stage { position: relative; overflow: hidden; background: #0f1412; }
+  #cv { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  #hud { position: absolute; left: 10px; bottom: 8px; background: rgba(0,0,0,.6); padding: 4px 10px;
+    border-radius: 6px; color: var(--dim); pointer-events: none; }
+  #hint { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); background: rgba(0,0,0,.65);
+    padding: 5px 14px; border-radius: 6px; pointer-events: none; white-space: nowrap; }
+  h2 { font-size: 14px; margin: 4px 0 10px; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 18px 0 6px; }
+  label.f { display: block; margin: 8px 0 3px; color: var(--dim); font-size: 12px; }
+  input[type=text], input[type=number], select, textarea { width: 100%; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; }
+  textarea { resize: vertical; min-height: 54px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  .row { display: flex; gap: 6px; } .row > * { flex: 1; min-width: 0; }
+  .note-box textarea { background: #2c2817; border-color: #5a4e2a; min-height: 70px; }
+  .help { color: var(--dim); font-size: 12px; margin: 3px 0 0; }
+  .warn { padding: 5px 8px; margin: 3px 0; border-radius: 5px; background: #33221f; cursor: pointer;
+    border-left: 3px solid var(--danger); }
+  .warn.info { background: #22292f; border-left-color: #6ba3d6; }
+  .okmsg { color: var(--ok); }
+  .secret-row { display: grid; grid-template-columns: 1fr 1fr 24px; gap: 4px; margin: 4px 0; }
+  .secret-row input { padding: 3px 5px; }
+  .x { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 15px; }
+  kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; font-size: 11px; }
+  .keys { color: var(--dim); font-size: 12px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗺️ Diseñador de niveles</h1>
+  <button class="btn" id="bNew">Nuevo</button>
+  <button class="btn" id="bOpen">Abrir…</button>
+  <button class="btn primary" id="bSave">Guardar</button>
+  <button class="btn" id="bSaveAs">Guardar como…</button>
+  <span class="sep"></span>
+  <button class="btn" id="bUndo" title="Ctrl+Z">↶</button>
+  <button class="btn" id="bRedo" title="Ctrl+Y">↷</button>
+  <button class="btn" id="bFit" title="Tecla 0">Ver todo</button>
+  <span class="status" id="status"></span>
+</header>
+<main>
+  <aside id="palette"></aside>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="hint"></div>
+    <div id="hud"></div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+<input type="file" id="fileInput" accept=".json,application/json" hidden>
+
+<script>
+"use strict";
+// =========================================================================
+// Constantes y catálogo de elementos
+// =========================================================================
+const CELL = 40;           // tamaño de casilla del juego (rejilla de colisión)
+const SNAP = 10;           // rejilla de colocación de objetos
+const STORE_KEY = "disenador-niveles-autosave";
+
+const OPT = {
+  look: [["default", "Aldeano"], ["woodcutter", "Leñador"], ["traveler", "Viajera encapuchada"], ["droid", "Dron de seguridad"]],
+  signSprite: [["sign", "Cartel de madera"], ["tablet", "Lápida / inscripción"], ["shrine", "Altar / teletransportador"],
+               ["monitor", "Monitor"], ["operating_table", "Mesa de operaciones"]],
+  wallStyle: [["stone", "Piedra"], ["ruin", "Ruina con musgo"], ["hospital", "Pared de hospital"], ["invisible", "Invisible (solo bloquea)"]],
+  doorStyle: [["wood", "Puerta de madera"], ["gate", "Verja de hierro"], ["metal", "Puerta metálica / ascensor"]],
+  secretDoorStyle: [["secret", "Muro con hiedra"], ["metal", "Ascensor / puerta metálica"], ["gate", "Verja"], ["wood", "Puerta de madera"]],
+  groundType: [["stone", "Losas de piedra"], ["tiles", "Baldosas"], ["stairs", "Escaleras"], ["dirt", "Tierra"]],
+  hiddenStyle: [["foliage", "Follaje (se revela al entrar)"], ["dark", "Oscuridad (se ilumina con un secreto)"]],
+  detailType: [["flowers", "Flores"], ["mushrooms", "Setas"], ["pebbles", "Piedrecitas"]],
+  msgStyle: [["area", "Nombre de zona (grande)"], ["discovery", "Descubrimiento (dorado)"], ["info", "Mensaje normal"]],
+  pathStyle: [["main", "Principal (ancho, claro)"], ["trail", "Sendero (desvío)"], ["faint", "Pisadas (casi oculto)"]],
+  objSprite: [["radio_off", "Radio vieja"], ["switch_off", "Interruptor"], ["wolf_ghost", "Lobo fantasma"]],
+  enemySprite: [["wolf_grey", "Lobo gris"], ["shroom", "Seta venenosa"], ["npc_droid", "Dron"], ["wolf_ghost", "Lobo fantasma (jefe)"]],
+  enemyBehavior: [["wander", "Deambula cerca de su sitio"], ["patrol", "Patrulla (puntos en «Avanzado»)"], ["guard", "Quieto en su sitio"]],
+  character: [["", "Ninguno"], ["security_droid", "Dron de seguridad (Alerta)"], ["elemental_wolf", "Elemental Wolf (Afinidad elemental)"],
+              ["hero", "Hero (combos)"], ["blaze", "Blaze (fuego +10%)"]],
+};
+
+const F = (key, label, type = "text", extra = {}) => ({ key, label, type, ...extra });
+const ID = F("id", "ID (único, sin espacios)");
+const NAME = F("name", "Nombre visible");
+
+// shape: point | rect | path ·  group: categoría de la paleta
+const KINDS = {
+  tree:   { group: "Naturaleza", label: "Árbol", ico: "🌳", shape: "point", r: 22, color: "#3f8a45",
+            fields: [F("variant", "Variante (0-3)", "number")], def: { variant: 0 } },
+  pine:   { group: "Naturaleza", label: "Pino", ico: "🌲", shape: "point", r: 20, color: "#2f6e50",
+            fields: [F("variant", "Variante (0-1)", "number")], def: { variant: 0 } },
+  rock:   { group: "Naturaleza", label: "Roca", ico: "🪨", shape: "point", r: 19, color: "#8a8a84" },
+  bush:   { group: "Naturaleza", label: "Arbusto", ico: "🌿", shape: "point", r: 17, color: "#4f9a48" },
+  stump:  { group: "Naturaleza", label: "Tocón", ico: "🪵", shape: "point", r: 14, color: "#8a6440" },
+  log:    { group: "Naturaleza", label: "Tronco caído", ico: "🪵", shape: "point", r: 24, color: "#7a5636" },
+  tall_grass: { group: "Naturaleza", label: "Hierba alta (no sólida)", ico: "🌾", shape: "point", r: 16, color: "#6fae4c" },
+  pillar: { group: "Naturaleza", label: "Columna", ico: "🏛️", shape: "point", r: 16, color: "#a9a596" },
+  pillar_broken: { group: "Naturaleza", label: "Columna rota", ico: "🏛️", shape: "point", r: 16, color: "#8c887b" },
+  bed:     { group: "Mobiliario", label: "Cama", ico: "🛏️", shape: "point", r: 20, color: "#b9c4bd" },
+  cabinet: { group: "Mobiliario", label: "Armario", ico: "🗄️", shape: "point", r: 18, color: "#8d9a97" },
+  rubble:  { group: "Mobiliario", label: "Escombros", ico: "🏚️", shape: "point", r: 18, color: "#8e8a80" },
+
+  npc:    { group: "Personajes y objetos", label: "NPC", ico: "🧑", shape: "point", r: 16, color: "#e8c46e",
+            fields: [ID, NAME, F("look", "Aspecto", "select", { options: OPT.look }),
+                     F("dialogue", "Diálogo (una página por línea)", "lines"),
+                     F("repeat_dialogue", "Si le hablas otra vez (opcional)", "lines"),
+                     F("cond_secret", "Si este secreto está desbloqueado…", "secret"),
+                     F("cond_pages", "…dice esto en su lugar", "lines")],
+            def: { name: "Aldeano", look: "default", dialogue: ["Hola, viajero."] } },
+  chest:  { group: "Personajes y objetos", label: "Cofre", ico: "📦", shape: "point", r: 16, color: "#c8913f",
+            fields: [ID, F("item", "ID del objeto"), F("item_name", "Nombre con artículo", "text",
+                     { help: "Se mostrará «Has encontrado una Poción.»" })],
+            def: { item: "potion", item_name: "una Poción" } },
+  sign:   { group: "Personajes y objetos", label: "Cartel / inscripción", ico: "🪧", shape: "point", r: 14, color: "#c79d63",
+            fields: [ID, NAME, F("text", "Texto (una página por línea)", "lines"),
+                     F("sprite", "Aspecto", "select", { options: OPT.signSprite }),
+                     F("verb", "Verbo del indicador (vacío = «Leer»)")],
+            def: { name: "Cartel", text: ["..."], sprite: "sign" } },
+  secret_object: { group: "Personajes y objetos", label: "Objeto secreto (por etapas)", ico: "📻", shape: "point", r: 16, color: "#9b7bd4",
+            fields: [ID, NAME, F("stages", "Texto de cada interacción (uno por línea)", "lines"),
+                     F("idle_text", "Texto cuando ya no quedan etapas"),
+                     F("unlocks_secret", "Desbloquea el secreto", "secret"),
+                     F("unlock_stage", "…en la interacción nº", "number"),
+                     F("sprite", "Aspecto", "select", { options: OPT.objSprite }),
+                     F("verb", "Verbo del indicador (vacío = «Interactuar»)"),
+                     F("vanish", "Desaparece al desbloquear el secreto", "checkbox")],
+            def: { name: "Radio vieja", stages: ["Una radio vieja.", "Se escucha estática..."], sprite: "radio_off", unlock_stage: "" } },
+  enemy:  { group: "Personajes y objetos", label: "Enemigo (combate de cartas)", ico: "⚔️", shape: "point", r: 18, color: "#d9534f",
+            fields: [ID, NAME, F("sprite", "Aspecto", "select", { options: OPT.enemySprite }),
+                     F("deck", "Mazo", "text", { help: "Nombre de un mazo (duelo, starter, estados, arcano, laboratorio, elemental; de enemigos: security_droid, elemental_wolf) o 10 ids de carta separados por comas: attack, guard, break, magic, recover..." }),
+                     F("hp", "Vida (vacío = 100)", "number"),
+                     F("character", "Personaje (pasiva)", "select", { options: OPT.character }),
+                     F("behavior", "Comportamiento", "select", { options: OPT.enemyBehavior }),
+                     F("radius", "Radio de paseo (px)", "number"),
+                     F("aggro", "Distancia a la que te persigue (0 = nunca)", "number"),
+                     F("speed", "Velocidad", "number"),
+                     F("aggression", "Agresividad de la IA (-1 defensiva … 1 agresiva)", "number"),
+                     F("intro", "Texto antes del combate (opcional)", "lines"),
+                     F("victory", "Texto al vencerlo (opcional)", "lines"),
+                     F("unlocks_secret", "Al vencerlo desbloquea el secreto", "secret"),
+                     F("reward_item", "Recompensa: ID del objeto (opcional)"),
+                     F("reward_name", "Recompensa: nombre con artículo"),
+                     F("can_flee", "Se puede huir", "checkbox"),
+                     F("extra", "Avanzado (JSON)", "textarea", { help: 'Opcional. P. ej. {"patrol": [[400, 300], [700, 300]], "randomness": 0.4}' })],
+            def: { name: "Lobo gris", sprite: "wolf_grey", deck: "duelo", hp: 60, character: "", behavior: "wander",
+                   radius: 120, aggro: 170, speed: 80, aggression: 0, can_flee: true, extra: "" } },
+  jump_spot: { group: "Habilidades de aventura", label: "Punto de salto (Hero)", ico: "⤴️", shape: "point", r: 14, color: "#f2c94c",
+            fields: [ID, F("target_x", "Destino X", "number"), F("target_y", "Destino Y", "number"),
+                     F("verb", "Texto del indicador (vacío = «Saltar»)")],
+            def: { target_x: "", target_y: "", verb: "Saltar arriba" } },
+  spawn:  { group: "Personajes y objetos", label: "Punto de aparición", ico: "🚩", shape: "point", r: 13, color: "#5aa0e0",
+            fields: [F("name", "Nombre", "text", { help: "«default» = donde empieza el jugador. Otros nombres sirven como destino de salidas de otros mapas." })],
+            def: { name: "default" } },
+
+  leaf_wall: { group: "Habilidades de aventura", label: "Pared de hojas (Blaze)", ico: "🍃", shape: "rect", w: 30, h: 120, color: "#3f8a35",
+            fields: [ID, NAME, F("height", "Altura visual (px)", "number")],
+            def: { name: "Pared de hojas", height: 70 } },
+  wall:   { group: "Estructuras", label: "Muro", ico: "🧱", shape: "rect", w: 160, h: 40, color: "#9a988c",
+            fields: [F("style", "Estilo", "select", { options: OPT.wallStyle }),
+                     F("height", "Altura visual (px)", "number")], def: { style: "stone", height: 64 } },
+  door:   { group: "Estructuras", label: "Puerta", ico: "🚪", shape: "rect", w: 80, h: 40, color: "#a0703c",
+            fields: [ID, NAME, F("style", "Tipo", "select", { options: OPT.doorStyle }),
+                     F("locked", "Cerrada", "checkbox"), F("key", "Llave que la abre (ID del objeto de un cofre)"),
+                     F("locked_text", "Texto si está cerrada", "lines"), F("height", "Altura visual (px)", "number")],
+            def: { name: "Puerta", style: "wood", locked: true, locked_text: ["Está cerrada."], height: 64 } },
+  secret_door: { group: "Estructuras", label: "Puerta secreta", ico: "🗝️", shape: "rect", w: 80, h: 40, color: "#8a63c9",
+            fields: [ID, NAME, F("style", "Aspecto", "select", { options: OPT.secretDoorStyle }),
+                     F("secret", "Se abre con el secreto", "secret"),
+                     F("hidden_text", "Texto al examinarla cerrada", "lines"), F("height", "Altura visual (px)", "number")],
+            def: { name: "Muro con hiedra", style: "secret", secret: "", hidden_text: ["Un muro cubierto de hiedra."], height: 72 } },
+
+  path:   { group: "Suelo", label: "Camino", ico: "〰️", shape: "path", color: "#d2b27a",
+            fields: [F("style", "Tipo", "select", { options: OPT.pathStyle }), F("width", "Anchura (px)", "number")],
+            def: { style: "trail", width: 54 } },
+  ground: { group: "Suelo", label: "Suelo especial", ico: "🟫", shape: "rect", w: 200, h: 160, color: "#8c8a80",
+            fields: [F("type", "Tipo", "select", { options: OPT.groundType })], def: { type: "stone" } },
+  detail: { group: "Suelo", label: "Flores / detalles", ico: "🌼", shape: "rect", w: 200, h: 120, color: "#e6d36a",
+            fields: [F("type", "Tipo", "select", { options: OPT.detailType }), F("count", "Cantidad", "number")],
+            def: { type: "flowers", count: 20 } },
+
+  trigger: { group: "Zonas", label: "Zona con mensaje", ico: "💬", shape: "rect", w: 240, h: 160, color: "#4cc3d9",
+            fields: [ID, F("message", "Mensaje al entrar"), F("style", "Estilo", "select", { options: OPT.msgStyle }),
+                     F("once", "Solo la primera vez", "checkbox"), F("requires_secret", "Solo si está desbloqueado", "secret")],
+            def: { message: "Nueva zona", style: "area", once: true } },
+  exit:   { group: "Zonas", label: "Salida a otro mapa", ico: "➡️", shape: "rect", w: 40, h: 200, color: "#d65ad0",
+            fields: [F("target_map", "Mapa destino (ID)"), F("target_spawn", "Aparecer en (punto de aparición)"),
+                     F("message", "Mensaje si el mapa aún no existe")],
+            def: { target_map: "", target_spawn: "default", message: "Has llegado al final de la zona." } },
+  hidden: { group: "Zonas", label: "Zona oculta / oscura", ico: "🍃", shape: "rect", w: 300, h: 200, color: "#1f5a32",
+            fields: [F("style", "Tipo", "select", { options: OPT.hiddenStyle }),
+                     F("secret", "Se revela con el secreto (oscuridad)", "secret")],
+            def: { style: "foliage", secret: "" },
+            help: "Follaje: tapa un secreto hasta que el jugador entra. Oscuridad: sala a oscuras (el jugador lleva un halo de luz) que se ilumina al desbloquear el secreto, p. ej. con un interruptor. Truco: deja fuera la franja que tapan las paredes del sur." },
+  note:   { group: "Zonas", label: "Nota para Claude", ico: "📝", shape: "point", r: 14, color: "#f2d65c",
+            fields: [F("text", "Nota", "textarea")], def: { text: "" } },
+};
+const OBSTACLE_TYPES = ["tree", "pine", "rock", "bush", "stump", "log", "pillar", "pillar_broken", "tall_grass",
+                        "bed", "cabinet", "rubble"];
+// Sprites por etapa que usa el juego para cada aspecto de objeto secreto
+const STAGE_SPRITES = {
+  radio_off: { "0": "radio_off", "2": "radio_static", "4": "radio_on" },
+  switch_off: { "0": "switch_off", "1": "switch_on" },
+};
+
+// =========================================================================
+// Estado
+// =========================================================================
+let doc = null;           // el mapa
+let uidCounter = 1;
+let selected = null;      // objeto seleccionado
+let tool = "select";      // select | paint | path | place:<kind>
+let brushSize = 1;
+let dirty = false;
+let fileHandle = null;
+const undoStack = [], redoStack = [];
+const view = { zoom: 0.5, x: 40, y: 40 };
+let mouse = { sx: 0, sy: 0, wx: 0, wy: 0, inside: false };
+let drag = null;          // operación de arrastre en curso
+let drawingPath = null;   // camino que se está dibujando
+let spaceDown = false;
+
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+const $ = (id) => document.getElementById(id);
+
+function newDoc(cols = 40, rows = 25) {
+  const d = { id: "nuevo_mapa", name: "Nuevo mapa", cols, rows, cells: new Array(cols * rows).fill(0),
+              forestSeed: 1, pineRatio: 0.25, groundSeed: 1, interior: false, description: "", secrets: [], objects: [] };
+  // Plantilla inicial: un claro con camino de oeste a este
+  const r0 = Math.floor(rows / 2) - 3;
+  for (let r = r0; r < r0 + 6; r++) for (let c = 0; c < cols; c++) d.cells[r * cols + c] = 1;
+  const midY = (r0 + 3) * CELL;
+  d.objects.push(mk("spawn", { x: 60, y: midY }));
+  d.objects.push(mk("path", { points: [[-20, midY], [cols * CELL + 20, midY]], style: "main", width: 110 }));
+  d.objects.push(mk("exit", { x: cols * CELL - 30, y: r0 * CELL, w: 30, h: 6 * CELL }));
+  return d;
+}
+
+function mk(kind, props = {}) {
+  const k = KINDS[kind];
+  const o = { uid: uidCounter++, kind, note: "", ...JSON.parse(JSON.stringify(k.def || {})) };
+  if (k.shape === "rect") { o.w = k.w; o.h = k.h; }
+  return Object.assign(o, props);
+}
+
+function uniqueId(kind) {
+  const ids = new Set(doc.objects.map(o => o.id).filter(Boolean));
+  let n = 1;
+  while (ids.has(`${kind}_${n}`)) n++;
+  return `${kind}_${n}`;
+}
+
+// =========================================================================
+// Deshacer / rehacer / autoguardado
+// =========================================================================
+function snapshot() { return JSON.stringify(doc); }
+function pushUndo() {
+  undoStack.push(snapshot());
+  if (undoStack.length > 150) undoStack.shift();
+  redoStack.length = 0;
+}
+function restore(snap) {
+  const selUid = selected && selected.uid;
+  doc = JSON.parse(snap);
+  selected = doc.objects.find(o => o.uid === selUid) || null;
+  changed(true);
+}
+function undo() { if (undoStack.length) { redoStack.push(snapshot()); restore(undoStack.pop()); } }
+function redo() { if (redoStack.length) { undoStack.push(snapshot()); restore(redoStack.pop()); } }
+
+let autosaveTimer = null;
+function changed(rebuildPanel = false) {
+  dirty = true;
+  updateStatus();
+  if (rebuildPanel) buildPanel(); else refreshWarnings();
+  requestDraw();
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ doc, uidCounter })); } catch (e) { /* sin almacenamiento */ }
+  }, 400);
+}
+function updateStatus() {
+  const name = fileHandle ? fileHandle.name : `${doc.id}.json`;
+  $("status").textContent = `${name} · ${dirty ? "cambios sin guardar" : "guardado"}`;
+}
+
+// =========================================================================
+// Conversión al formato del juego (y desde él)
+// =========================================================================
+function mergeCells() {
+  const { cols, rows, cells } = doc, used = new Uint8Array(cols * rows), out = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const i = r * cols + c;
+    if (!cells[i] || used[i]) continue;
+    let w = 0;
+    while (c + w < cols && cells[r * cols + c + w] && !used[r * cols + c + w]) w++;
+    let h = 1;
+    outer: while (r + h < rows) {
+      for (let k = 0; k < w; k++) { const j = (r + h) * cols + c + k; if (!cells[j] || used[j]) break outer; }
+      h++;
+    }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) used[(r + y) * cols + c + x] = 1;
+    out.push([c * CELL, r * CELL, w * CELL, h * CELL]);
+  }
+  return out;
+}
+
+const rectOf = (o) => [Math.round(o.x), Math.round(o.y), Math.round(o.w), Math.round(o.h)];
+const posOf = (o) => [Math.round(o.x), Math.round(o.y)];
+const lines = (a) => (a || []).filter(s => String(s).trim() !== "");
+function withNote(out, o) { if (o.note && o.note.trim()) out.note = o.note.trim(); return out; }
+
+function exportMap() {
+  const m = {
+    id: doc.id, name: doc.name, size: [doc.cols * CELL, doc.rows * CELL],
+    description: doc.description || undefined,
+    spawns: {}, walkable: mergeCells(),
+    forest: doc.interior ? undefined : { seed: +doc.forestSeed || 0, spacing: 50, pine_ratio: +doc.pineRatio },
+    ground: { seed: +doc.groundSeed || 0, ...(doc.interior ? { background: "void" } : {}), areas: [], paths: [], details: [] },
+    walls: [], obstacles: [], decorations: [], interactables: [],
+    secrets: doc.secrets.filter(s => s.id).map(s => ({ id: s.id, name: s.name || s.id,
+              ...(s.unlock_message ? { unlock_message: s.unlock_message } : {}) })),
+    hidden_areas: [], triggers: [], exits: [], notes: [],
+  };
+  for (const o of doc.objects) {
+    switch (o.kind) {
+      case "spawn": m.spawns[o.name || "default"] = posOf(o); break;
+      case "note": m.notes.push({ pos: posOf(o), text: o.text || "" }); break;
+      case "npc": {
+        const n = { type: "npc", id: o.id, name: o.name, look: o.look, pos: posOf(o), dialogue: lines(o.dialogue) };
+        if (lines(o.repeat_dialogue).length) n.repeat_dialogue = lines(o.repeat_dialogue);
+        if (o.cond_secret && lines(o.cond_pages).length)
+          n.conditional_dialogue = [{ requires_secret: o.cond_secret, pages: lines(o.cond_pages) }];
+        m.interactables.push(withNote(n, o)); break;
+      }
+      case "chest": m.interactables.push(withNote({ type: "chest", id: o.id, pos: posOf(o), item: o.item, item_name: o.item_name }, o)); break;
+      case "sign": {
+        const s = { type: "sign", id: o.id, name: o.name, pos: posOf(o), text: lines(o.text), sprite: o.sprite };
+        if (o.verb) s.verb = o.verb;
+        m.interactables.push(withNote(s, o)); break;
+      }
+      case "secret_object": {
+        const sprite = o.sprite || "radio_off";
+        const s = { type: "secret_object", id: o.id, name: o.name, pos: posOf(o), sprite };
+        const st = (o.stage_sprites && o.stage_sprites["0"] === sprite) ? o.stage_sprites : STAGE_SPRITES[sprite];
+        if (st) s.stage_sprites = st;
+        s.stages = lines(o.stages);
+        if (o.verb) s.verb = o.verb;
+        if (o.vanish) s.vanish = true;
+        if (o.idle_text) s.idle_text = o.idle_text;
+        if (o.unlocks_secret) s.unlocks_secret = o.unlocks_secret;
+        if (o.unlock_stage !== "" && o.unlock_stage != null) s.unlock_stage = +o.unlock_stage;
+        m.interactables.push(withNote(s, o)); break;
+      }
+      case "enemy": {
+        const deck = (o.deck || "duelo").trim();
+        const e = { type: "enemy", id: o.id, name: o.name, sprite: o.sprite || "wolf_grey", pos: posOf(o),
+                    deck: deck.includes(",") ? deck.split(",").map(s => s.trim()).filter(Boolean) : deck };
+        for (const k of ["hp", "radius", "aggro", "speed", "aggression"])
+          if (o[k] !== "" && o[k] != null) e[k] = +o[k];
+        if (o.character) e.character = o.character;
+        e.behavior = o.behavior || "wander";
+        if (lines(o.intro).length) e.intro = lines(o.intro);
+        if (lines(o.victory).length) e.victory = lines(o.victory);
+        if (o.unlocks_secret) e.unlocks_secret = o.unlocks_secret;
+        if (o.reward_item) e.reward = { item: o.reward_item, name: o.reward_name || o.reward_item };
+        if (o.can_flee === false) e.can_flee = false;
+        if (o.extra && o.extra.trim()) {
+          try { Object.assign(e, JSON.parse(o.extra)); }
+          catch (err) { alert(`El campo «Avanzado» del enemigo ${o.id || o.name} no es JSON válido; se ignora.`); }
+        }
+        m.interactables.push(withNote(e, o)); break;
+      }
+      case "leaf_wall": m.interactables.push(withNote({ type: "leaf_wall", id: o.id, name: o.name,
+        rect: rectOf(o), height: +o.height || 70 }, o)); break;
+      case "jump_spot": {
+        const j = { type: "jump_spot", id: o.id, pos: posOf(o),
+                    target: [Math.round(+o.target_x || 0), Math.round(+o.target_y || 0)] };
+        if (o.verb) j.verb = o.verb;
+        m.interactables.push(withNote(j, o)); break;
+      }
+      case "door": {
+        const d = { type: "door", id: o.id, name: o.name, style: o.style, rect: rectOf(o), height: +o.height || 64,
+                    locked: !!o.locked, locked_text: lines(o.locked_text) };
+        if (o.key) d.key = o.key;
+        m.interactables.push(withNote(d, o)); break;
+      }
+      case "secret_door": m.interactables.push(withNote({ type: "secret_door", id: o.id, name: o.name,
+        style: o.style || "secret", secret: o.secret,
+        rect: rectOf(o), height: +o.height || 72, hidden_text: lines(o.hidden_text) }, o)); break;
+      case "wall": m.walls.push(withNote({ rect: rectOf(o), style: o.style, height: +o.height || 64 }, o)); break;
+      case "ground": m.ground.areas.push(withNote({ type: o.type, rect: rectOf(o) }, o)); break;
+      case "detail": m.ground.details.push(withNote({ type: o.type, rect: rectOf(o), count: +o.count || 10 }, o)); break;
+      case "path": {
+        const p = { style: o.style, points: o.points.map(p => [Math.round(p[0]), Math.round(p[1])]) };
+        if (o.style !== "faint") p.width = +o.width || 54;
+        m.ground.paths.push(withNote(p, o)); break;
+      }
+      case "trigger": {
+        const t = { id: o.id, rect: rectOf(o), message: o.message, style: o.style, once: !!o.once };
+        if (o.requires_secret) t.requires_secret = o.requires_secret;
+        m.triggers.push(withNote(t, o)); break;
+      }
+      case "exit": m.exits.push(withNote({ rect: rectOf(o), target_map: o.target_map || null,
+        target_spawn: o.target_spawn || "default", message: o.message }, o)); break;
+      case "hidden": {
+        const h = { rect: rectOf(o) };
+        if (o.style === "dark") { h.style = "dark"; if (o.secret) h.secret = o.secret; }
+        m.hidden_areas.push(withNote(h, o)); break;
+      }
+      default:
+        if (OBSTACLE_TYPES.includes(o.kind)) {
+          const p = { type: o.kind, pos: posOf(o) };
+          if (o.variant !== "" && o.variant != null && +o.variant) p.variant = +o.variant;
+          (o.kind === "tall_grass" ? m.decorations : m.obstacles).push(withNote(p, o));
+        }
+    }
+  }
+  if (!m.description) delete m.description;
+  if (!m.forest) delete m.forest;
+  return m;
+}
+
+function importMap(m) {
+  const cols = Math.ceil(m.size[0] / CELL), rows = Math.ceil(m.size[1] / CELL);
+  const d = { id: m.id || "mapa", name: m.name || m.id || "Mapa", cols, rows, cells: new Array(cols * rows).fill(0),
+              forestSeed: (m.forest && m.forest.seed) || 0, pineRatio: m.forest && m.forest.pine_ratio != null ? m.forest.pine_ratio : 0.25,
+              groundSeed: (m.ground && m.ground.seed) || 0, description: m.description || "",
+              interior: !m.forest || (m.ground && m.ground.background === "void"),
+              secrets: (m.secrets || []).map(s => ({ id: s.id, name: s.name || "", unlock_message: s.unlock_message || "" })),
+              objects: [] };
+  for (const [x, y, w, h] of m.walkable || []) {
+    for (let r = Math.floor(y / CELL); r < Math.ceil((y + h) / CELL); r++)
+      for (let c = Math.floor(x / CELL); c < Math.ceil((x + w) / CELL); c++)
+        if (r >= 0 && c >= 0 && r < rows && c < cols) d.cells[r * cols + c] = 1;
+  }
+  const add = (kind, props, src) => d.objects.push(mk(kind, { ...props, note: (src && src.note) || "" }));
+  const R = (r) => ({ x: r[0], y: r[1], w: r[2], h: r[3] });
+  const P = (p) => ({ x: p[0], y: p[1] });
+  for (const [name, p] of Object.entries(m.spawns || {})) add("spawn", { name, ...P(p) });
+  for (const o of [...(m.obstacles || []), ...(m.decorations || [])])
+    if (KINDS[o.type]) add(o.type, { ...P(o.pos), variant: o.variant || 0 }, o);
+  for (const w of m.walls || []) add("wall", { ...R(w.rect), style: w.style || "stone", height: w.height || 64 }, w);
+  for (const it of m.interactables || []) {
+    const base = { id: it.id || "", name: it.name || "" };
+    switch (it.type) {
+      case "npc": {
+        const c = (it.conditional_dialogue || [])[0] || {};
+        add("npc", { ...base, ...P(it.pos), look: it.look || "default", dialogue: it.dialogue || [],
+          repeat_dialogue: it.repeat_dialogue || [], cond_secret: c.requires_secret || "", cond_pages: c.pages || [] }, it); break;
+      }
+      case "chest": add("chest", { ...base, ...P(it.pos), item: it.item, item_name: it.item_name }, it); break;
+      case "sign": add("sign", { ...base, ...P(it.pos), text: [].concat(it.text || []), sprite: it.sprite || "sign", verb: it.verb || "" }, it); break;
+      case "secret_object": add("secret_object", { ...base, ...P(it.pos), stages: it.stages || [], idle_text: it.idle_text || "",
+        unlocks_secret: it.unlocks_secret || "", unlock_stage: it.unlock_stage ?? "", sprite: it.sprite || "radio_off",
+        stage_sprites: it.stage_sprites, verb: it.verb || "", vanish: !!it.vanish }, it); break;
+      case "enemy": {
+        const known = ["type", "id", "name", "sprite", "pos", "deck", "hp", "radius", "aggro", "speed", "aggression",
+                       "character", "behavior", "intro", "victory", "unlocks_secret", "reward", "can_flee", "note"];
+        const extra = Object.fromEntries(Object.entries(it).filter(([k]) => !known.includes(k)));
+        add("enemy", { ...base, ...P(it.pos), sprite: it.sprite || "wolf_grey",
+          deck: Array.isArray(it.deck) ? it.deck.join(", ") : (it.deck || "duelo"),
+          hp: it.hp ?? "", character: it.character || "", behavior: it.behavior || "wander",
+          radius: it.radius ?? "", aggro: it.aggro ?? "", speed: it.speed ?? "", aggression: it.aggression ?? "",
+          intro: it.intro || [], victory: it.victory || [], unlocks_secret: it.unlocks_secret || "",
+          reward_item: (it.reward && it.reward.item) || "", reward_name: (it.reward && it.reward.name) || "",
+          can_flee: it.can_flee !== false, extra: Object.keys(extra).length ? JSON.stringify(extra) : "" }, it); break;
+      }
+      case "leaf_wall": add("leaf_wall", { ...base, ...R(it.rect), height: it.height || 70 }, it); break;
+      case "jump_spot": add("jump_spot", { id: it.id || "", ...P(it.pos), target_x: it.target[0], target_y: it.target[1],
+        verb: it.verb || "" }, it); break;
+      case "door": add("door", { ...base, ...R(it.rect), style: it.style || "wood", locked: it.locked !== false,
+        key: it.key || "", locked_text: [].concat(it.locked_text || []), height: it.height || 64 }, it); break;
+      case "secret_door": add("secret_door", { ...base, ...R(it.rect), style: it.style || "secret", secret: it.secret || "",
+        hidden_text: [].concat(it.hidden_text || []), height: it.height || 72 }, it); break;
+      default: add("note", { ...P(it.pos || [0, 0]), text: `Tipo desconocido: ${JSON.stringify(it)}` });
+    }
+  }
+  const g = m.ground || {};
+  for (const a of g.areas || []) add("ground", { ...R(a.rect), type: a.type }, a);
+  for (const a of g.details || []) add("detail", { ...R(a.rect), type: a.type, count: a.count || 10 }, a);
+  for (const p of g.paths || []) add("path", { points: p.points.map(q => [q[0], q[1]]), style: p.style || "trail", width: p.width || 54 }, p);
+  for (const t of m.triggers || []) add("trigger", { ...R(t.rect), id: t.id || "", message: t.message, style: t.style || "info",
+    once: t.once !== false, requires_secret: t.requires_secret || "" }, t);
+  for (const e of m.exits || []) add("exit", { ...R(e.rect), target_map: e.target_map || "", target_spawn: e.target_spawn || "default",
+    message: e.message || "" }, e);
+  for (const h of m.hidden_areas || []) add("hidden", { ...R(h.rect), style: h.style || "foliage", secret: h.secret || "" }, h);
+  for (const n of m.notes || []) add("note", { ...P(n.pos), text: n.text }, null);
+  return d;
+}
+
+// =========================================================================
+// Guardar / abrir
+// =========================================================================
+const hasFS = "showSaveFilePicker" in window;
+const jsonText = () => JSON.stringify(exportMap(), null, 2);
+
+async function save(asNew = false) {
+  try {
+    if (hasFS) {
+      if (!fileHandle || asNew) {
+        fileHandle = await window.showSaveFilePicker({ suggestedName: `${doc.id}.json`,
+          types: [{ description: "Mapa del juego", accept: { "application/json": [".json"] } }] });
+      }
+      const w = await fileHandle.createWritable();
+      await w.write(jsonText()); await w.close();
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([jsonText()], { type: "application/json" }));
+      a.download = `${doc.id}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+    dirty = false; updateStatus();
+  } catch (e) { if (e.name !== "AbortError") alert("No se pudo guardar: " + e.message); }
+}
+
+async function openFile() {
+  if (dirty && !confirm("Hay cambios sin guardar. ¿Abrir otro mapa igualmente?")) return;
+  if ("showOpenFilePicker" in window) {
+    try {
+      const [h] = await window.showOpenFilePicker({ types: [{ description: "Mapa", accept: { "application/json": [".json"] } }] });
+      loadText(await (await h.getFile()).text(), h);
+    } catch (e) { if (e.name !== "AbortError") alert("No se pudo abrir: " + e.message); }
+  } else $("fileInput").click();
+}
+$("fileInput").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  loadText(await f.text(), null); e.target.value = "";
+};
+function loadText(text, handle) {
+  try {
+    const m = JSON.parse(text);
+    if (!m.size) throw new Error("No parece un mapa del juego (falta «size»).");
+    pushUndo();
+    doc = importMap(m); fileHandle = handle; selected = null;
+    fitView(); changed(true); dirty = false; updateStatus();
+  } catch (e) { alert("Error al leer el mapa: " + e.message); }
+}
+
+// =========================================================================
+// Geometría y búsqueda
+// =========================================================================
+const snap = (v, s = SNAP) => Math.round(v / s) * s;
+function toWorld(sx, sy) { return [(sx - view.x) / view.zoom, (sy - view.y) / view.zoom]; }
+function toScreen(wx, wy) { return [wx * view.zoom + view.x, wy * view.zoom + view.y]; }
+function cellAt(wx, wy) { return [Math.floor(wx / CELL), Math.floor(wy / CELL)]; }
+function isWalkable(wx, wy) {
+  const [c, r] = cellAt(wx, wy);
+  return c >= 0 && r >= 0 && c < doc.cols && r < doc.rows && doc.cells[r * doc.cols + c] === 1;
+}
+function distSeg(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+  let t = l ? ((px - ax) * dx + (py - ay) * dy) / l : 0; t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+function hitTest(wx, wy) {
+  const tol = 6 / view.zoom;
+  const objs = doc.objects;
+  for (let i = objs.length - 1; i >= 0; i--) {         // puntos primero
+    const o = objs[i], k = KINDS[o.kind];
+    if (k.shape === "point" && Math.hypot(wx - o.x, wy - o.y) <= Math.max(k.r, 10 / view.zoom) + tol) return o;
+  }
+  const rects = objs.filter(o => KINDS[o.kind].shape === "rect" && wx >= o.x - tol && wx <= o.x + o.w + tol &&
+                                 wy >= o.y - tol && wy <= o.y + o.h + tol);
+  if (rects.length) return rects.sort((a, b) => a.w * a.h - b.w * b.h)[0];  // el más pequeño
+  for (let i = objs.length - 1; i >= 0; i--) {
+    const o = objs[i];
+    if (o.kind !== "path") continue;
+    const half = (o.style === "faint" ? 12 : (+o.width || 54) / 2) + tol;
+    for (let j = 0; j < o.points.length - 1; j++)
+      if (distSeg(wx, wy, ...o.points[j], ...o.points[j + 1]) <= half) return o;
+  }
+  return null;
+}
+function handleAt(sx, sy) {
+  if (!selected) return null;
+  const k = KINDS[selected.kind];
+  if (k.shape === "rect") {
+    const [hx, hy] = toScreen(selected.x + selected.w, selected.y + selected.h);
+    if (Math.abs(sx - hx) <= 8 && Math.abs(sy - hy) <= 8) return { type: "resize" };
+  } else if (k.shape === "path") {
+    for (let i = 0; i < selected.points.length; i++) {
+      const [px, py] = toScreen(...selected.points[i]);
+      if (Math.hypot(sx - px, sy - py) <= 8) return { type: "vertex", index: i };
+    }
+  }
+  return null;
+}
+
+// =========================================================================
+// Dibujo
+// =========================================================================
+let drawQueued = false;
+function requestDraw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(draw); } }
+
+let forestPattern = null;
+function getForestPattern() {
+  if (forestPattern) return forestPattern;
+  const p = document.createElement("canvas"); p.width = p.height = 80;
+  const g = p.getContext("2d");
+  g.fillStyle = "#22412b"; g.fillRect(0, 0, 80, 80);
+  for (const [x, y, r] of [[20, 18, 15], [60, 30, 17], [35, 60, 16], [75, 72, 12], [5, 55, 11]]) {
+    g.fillStyle = "#1b3523"; g.beginPath(); g.arc(x, y + 3, r, 0, 7); g.fill();
+    g.fillStyle = "#2a5034"; g.beginPath(); g.arc(x, y, r - 3, 0, 7); g.fill();
+  }
+  forestPattern = ctx.createPattern(p, "repeat");
+  return forestPattern;
+}
+
+function draw() {
+  drawQueued = false;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#0f1412"; ctx.fillRect(0, 0, W, H);
+
+  const MW = doc.cols * CELL, MH = doc.rows * CELL, z = view.zoom;
+  ctx.save();
+  ctx.translate(view.x, view.y); ctx.scale(z, z);
+
+  // Bosque y zonas caminables
+  ctx.fillStyle = doc.interior ? "#16161c" : getForestPattern(); ctx.fillRect(0, 0, MW, MH);
+  const [vx0, vy0] = toWorld(0, 0), [vx1, vy1] = toWorld(W, H);
+  const c0 = Math.max(0, Math.floor(vx0 / CELL)), c1 = Math.min(doc.cols - 1, Math.floor(vx1 / CELL));
+  const r0 = Math.max(0, Math.floor(vy0 / CELL)), r1 = Math.min(doc.rows - 1, Math.floor(vy1 / CELL));
+  ctx.fillStyle = "#78ad58";
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++)
+    if (doc.cells[r * doc.cols + c]) ctx.fillRect(c * CELL, r * CELL, CELL + 0.5, CELL + 0.5);
+
+  // Rejilla
+  if (z > 0.18) {
+    ctx.lineWidth = 1 / z;
+    for (let c = c0; c <= c1 + 1; c++) {
+      ctx.strokeStyle = c % 5 === 0 ? "rgba(0,0,0,.28)" : "rgba(0,0,0,.12)";
+      ctx.beginPath(); ctx.moveTo(c * CELL, r0 * CELL); ctx.lineTo(c * CELL, (r1 + 1) * CELL); ctx.stroke();
+    }
+    for (let r = r0; r <= r1 + 1; r++) {
+      ctx.strokeStyle = r % 5 === 0 ? "rgba(0,0,0,.28)" : "rgba(0,0,0,.12)";
+      ctx.beginPath(); ctx.moveTo(c0 * CELL, r * CELL); ctx.lineTo((c1 + 1) * CELL, r * CELL); ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = "#e8c46e"; ctx.lineWidth = 2 / z; ctx.strokeRect(0, 0, MW, MH);
+
+  const byShape = (s) => doc.objects.filter(o => KINDS[o.kind].shape === s);
+  const rects = byShape("rect");
+  const order = ["ground", "detail", "hidden", "trigger", "exit", "wall", "door", "secret_door"];
+
+  // Suelo especial y detalles (debajo de los caminos)
+  for (const o of rects.filter(o => o.kind === "ground" || o.kind === "detail")) drawRect(o);
+  for (const o of byShape("path")) drawPath(o);
+  if (drawingPath) drawPath(drawingPath, true);
+  for (const kind of order.slice(2)) for (const o of rects.filter(o => o.kind === kind)) drawRect(o);
+  for (const o of byShape("point")) drawPointBody(o);
+
+  // Previsualizaciones
+  if (drag && (drag.type === "createRect" || drag.type === "paintRect")) {
+    const [x, y, w, h] = normRect(drag);
+    ctx.setLineDash([6 / z, 4 / z]); ctx.lineWidth = 2 / z;
+    ctx.strokeStyle = drag.type === "paintRect" ? (drag.value ? "#cfeaa0" : "#ff8a7a") : "#fff";
+    ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
+  }
+  if (tool === "paint" && mouse.inside && !drag) {
+    const [c, r] = cellAt(mouse.wx, mouse.wy), o = Math.floor((brushSize - 1) / 2);
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 / z;
+    ctx.strokeRect((c - o) * CELL, (r - o) * CELL, brushSize * CELL, brushSize * CELL);
+  }
+  ctx.restore();
+
+  // Iconos y etiquetas en espacio de pantalla (tamaño constante)
+  for (const o of doc.objects) drawLabel(o);
+  drawSelection();
+  updateHud();
+}
+
+function drawRect(o) {
+  const k = KINDS[o.kind], z = view.zoom;
+  ctx.save();
+  switch (o.kind) {
+    case "ground":
+      ctx.fillStyle = { stone: "rgba(160,156,142,.85)", stairs: "rgba(60,56,50,.9)", dirt: "rgba(170,140,95,.85)",
+                        tiles: "rgba(205,212,200,.9)" }[o.type] || "#888";
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+      if (o.type === "stairs") { ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineWidth = 2 / z;
+        for (let y = o.y; y < o.y + o.h; y += o.h / 6) { ctx.beginPath(); ctx.moveTo(o.x, y); ctx.lineTo(o.x + o.w, y); ctx.stroke(); } }
+      break;
+    case "detail":
+      ctx.fillStyle = "rgba(240,220,110,.18)"; ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.setLineDash([5 / z, 4 / z]); ctx.strokeStyle = "rgba(240,220,110,.8)"; ctx.lineWidth = 1.5 / z;
+      ctx.strokeRect(o.x, o.y, o.w, o.h); break;
+    case "hidden":
+      ctx.fillStyle = o.style === "dark" ? "rgba(5,8,14,.6)" : "rgba(20,70,35,.55)"; ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.strokeStyle = o.style === "dark" ? "rgba(150,170,255,.8)" : "rgba(120,200,120,.8)"; ctx.setLineDash([10 / z, 6 / z]); ctx.lineWidth = 2 / z;
+      ctx.strokeRect(o.x, o.y, o.w, o.h); break;
+    case "trigger": case "exit":
+      ctx.fillStyle = o.kind === "exit" ? "rgba(214,90,208,.25)" : "rgba(76,195,217,.18)";
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.strokeStyle = k.color; ctx.lineWidth = 2 / z; ctx.setLineDash([8 / z, 5 / z]);
+      ctx.strokeRect(o.x, o.y, o.w, o.h); break;
+    case "wall":
+      ctx.fillStyle = o.style === "invisible" ? "rgba(255,80,80,.25)" :
+        ({ ruin: "#8f8d7e", hospital: "#cdd0c2" }[o.style] || "#a3a194");
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(o.x, o.y + o.h * 0.6, o.w, o.h * 0.4);
+      ctx.strokeStyle = "#222"; ctx.lineWidth = 1.5 / z; ctx.strokeRect(o.x, o.y, o.w, o.h); break;
+    case "door": case "secret_door":
+      ctx.fillStyle = o.kind === "door" ? ({ gate: "#5d6068", metal: "#9aa3ad" }[o.style] || "#9b6a38") : "rgba(138,99,201,.75)";
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.strokeStyle = "#222"; ctx.lineWidth = 1.5 / z;
+      if (o.kind === "secret_door") ctx.setLineDash([5 / z, 3 / z]);
+      ctx.strokeRect(o.x, o.y, o.w, o.h); break;
+  }
+  ctx.restore();
+}
+
+function drawPath(o, preview = false) {
+  const z = view.zoom;
+  const pts = preview ? [...o.points, [mouse.wx, mouse.wy]] : o.points;
+  if (pts.length < 2) return;
+  ctx.save();
+  ctx.lineCap = ctx.lineJoin = "round";
+  const trace = () => { ctx.beginPath(); ctx.moveTo(...pts[0]); for (const p of pts.slice(1)) ctx.lineTo(...p); ctx.stroke(); };
+  if (o.style === "faint") {
+    ctx.strokeStyle = "rgba(150,140,90,.9)"; ctx.lineWidth = 16; ctx.setLineDash([14, 18]); trace();
+  } else {
+    const w = +o.width || 54;
+    ctx.strokeStyle = o.style === "main" ? "#8a6a44" : "#6f5a3c"; ctx.lineWidth = w + 8; trace();
+    ctx.strokeStyle = o.style === "main" ? "#d2b27a" : "#a88d61"; ctx.lineWidth = w; trace();
+  }
+  if (preview) { ctx.setLineDash([]); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 / z; trace(); }
+  ctx.restore();
+}
+
+function drawPointBody(o) {
+  const k = KINDS[o.kind], z = view.zoom;
+  if (o.kind === "note") return;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,.3)";
+  ctx.beginPath(); ctx.ellipse(o.x, o.y + 2, k.r, k.r * 0.4, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = k.color + "cc"; ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5 / z;
+  ctx.beginPath(); ctx.arc(o.x, o.y, k.r, 0, 7); ctx.fill(); ctx.stroke();
+  if (o.kind === "pillar_broken") { ctx.setLineDash([3 / z, 3 / z]); ctx.strokeStyle = "#fff"; ctx.stroke(); }
+  if (!["note", "spawn", "tall_grass"].includes(o.kind) && !isWalkable(o.x, o.y)) {   // fuera de zona caminable
+    ctx.strokeStyle = "#ff6a5a"; ctx.lineWidth = 3 / z; ctx.setLineDash([4 / z, 3 / z]);
+    ctx.beginPath(); ctx.arc(o.x, o.y, k.r + 5, 0, 7); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function emojiFont(px) { return `${px}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; }
+
+function drawLabel(o) {
+  const k = KINDS[o.kind], z = view.zoom;
+  let cx, cy;
+  if (k.shape === "point") [cx, cy] = toScreen(o.x, o.y);
+  else if (k.shape === "rect") [cx, cy] = toScreen(o.x + o.w / 2, o.y + o.h / 2);
+  else { const p = o.points[Math.floor((o.points.length - 1) / 2)]; [cx, cy] = toScreen(...p); }
+  if (cx < -60 || cy < -60 || cx > cv.clientWidth + 60 || cy > cv.clientHeight + 60) return;
+  ctx.save();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  if (o.kind === "note") {
+    const txt = (o.text || "(nota vacía)").split("\n")[0].slice(0, 34);
+    ctx.font = "12px Segoe UI, sans-serif";
+    const w = Math.min(240, ctx.measureText(txt).width + 34);
+    ctx.fillStyle = "#f2d65c"; ctx.strokeStyle = "#7a6420";
+    ctx.beginPath(); ctx.roundRect(cx - 12, cy - 12, w, 24, 4); ctx.fill(); ctx.stroke();
+    ctx.font = emojiFont(13); ctx.fillText("📝", cx, cy + 1);
+    ctx.fillStyle = "#2b2408"; ctx.textAlign = "left"; ctx.font = "12px Segoe UI, sans-serif";
+    ctx.fillText(txt, cx + 10, cy + 1);
+    ctx.restore(); return;
+  }
+  const size = Math.max(12, Math.min(30, (k.r || 16) * 1.5 * z));
+  const icoBySprite = { switch_off: "🔴", wolf_ghost: "🐺", operating_table: "🩺", monitor: "🖥️", shrine: "💠", tablet: "🪦" };
+  let ico = icoBySprite[o.sprite] || (o.kind === "npc" && o.look === "droid" ? "🤖" : k.ico);
+  if (o.kind === "hidden" && o.style === "dark") ico = "🌑";
+  if (k.shape !== "path" && (k.shape === "point" || z > 0.15)) {
+    ctx.font = emojiFont(k.shape === "rect" ? Math.max(14, Math.min(26, 22 * z * 2)) : size);
+    ctx.fillText(ico, cx, cy + 1);
+  }
+  let label = "";
+  if (o.kind === "spawn") label = o.name || "default";
+  else if (o.kind === "exit") label = "→ " + (o.target_map || "?");
+  else if (o.kind === "trigger") label = "«" + (o.message || "") + "»";
+  else if (o.name && ["npc", "sign", "secret_object", "door", "secret_door"].includes(o.kind)) label = o.name;
+  if (label && z > 0.2) {
+    ctx.font = "600 11px Segoe UI, sans-serif";
+    const ly = cy + (k.shape === "point" ? Math.max(14, k.r * z) + 9 : 18);
+    const w = ctx.measureText(label).width + 10;
+    ctx.fillStyle = "rgba(0,0,0,.65)";
+    ctx.beginPath(); ctx.roundRect(cx - w / 2, ly - 8, w, 16, 4); ctx.fill();
+    ctx.fillStyle = "#f2eee0"; ctx.fillText(label, cx, ly);
+  }
+  if (o.note && o.note.trim()) {          // indicador de nota
+    ctx.font = emojiFont(12);
+    ctx.fillText("📝", cx + Math.max(12, (k.r || 16) * z) + 4, cy - Math.max(12, (k.r || 16) * z));
+  }
+  ctx.restore();
+}
+
+function drawSelection() {
+  if (!selected) return;
+  const k = KINDS[selected.kind];
+  ctx.save(); ctx.strokeStyle = "#ffe08a"; ctx.lineWidth = 2;
+  if (k.shape === "point") {
+    const [x, y] = toScreen(selected.x, selected.y);
+    const r = Math.max(14, k.r * view.zoom) + 6;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke();
+  } else if (k.shape === "rect") {
+    const [x, y] = toScreen(selected.x, selected.y);
+    ctx.strokeRect(x - 2, y - 2, selected.w * view.zoom + 4, selected.h * view.zoom + 4);
+    const [hx, hy] = toScreen(selected.x + selected.w, selected.y + selected.h);
+    ctx.fillStyle = "#ffe08a"; ctx.fillRect(hx - 5, hy - 5, 10, 10);
+  } else {
+    for (const p of selected.points) {
+      const [x, y] = toScreen(...p);
+      ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+const HINTS = {
+  select: "Clic: seleccionar · arrastrar: mover · arrastrar en vacío: desplazar la vista",
+  paint: "Clic izq.: zona caminable · clic der.: bosque · Mayús + arrastrar: rectángulo",
+  path: "Clic: añadir punto · doble clic o Intro: terminar · Esc: cancelar",
+};
+function updateHud() {
+  const [c, r] = cellAt(mouse.wx, mouse.wy);
+  $("hud").textContent = `x ${Math.round(mouse.wx)}  y ${Math.round(mouse.wy)}  ·  casilla ${c}, ${r}  ·  zoom ${Math.round(view.zoom * 100)}%`;
+  let hint = HINTS[tool];
+  if (tool.startsWith("place:")) {
+    const k = KINDS[tool.slice(6)];
+    hint = k.shape === "rect" ? `${k.label}: arrastra para dibujar (o clic para tamaño estándar) · Esc: terminar`
+                              : `${k.label}: clic para colocar (puedes poner varios) · Esc: terminar`;
+  }
+  $("hint").textContent = hint;
+}
+
+// =========================================================================
+// Ratón
+// =========================================================================
+function normRect(d) {
+  const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1);
+  return [x, y, Math.abs(d.x1 - d.x0), Math.abs(d.y1 - d.y0)];
+}
+function paintAt(wx, wy, value) {
+  const [c, r] = cellAt(wx, wy), off = Math.floor((brushSize - 1) / 2);
+  let any = false;
+  for (let y = r - off; y < r - off + brushSize; y++) for (let x = c - off; x < c - off + brushSize; x++) {
+    if (x < 0 || y < 0 || x >= doc.cols || y >= doc.rows) continue;
+    const i = y * doc.cols + x;
+    if (doc.cells[i] !== value) { doc.cells[i] = value; any = true; }
+  }
+  if (any) changed();
+}
+
+cv.addEventListener("contextmenu", (e) => e.preventDefault());
+cv.addEventListener("pointerdown", (e) => {
+  cv.setPointerCapture(e.pointerId);
+  const [wx, wy] = toWorld(e.offsetX, e.offsetY);
+  if (e.button === 1 || (e.button === 0 && spaceDown)) { drag = { type: "pan", sx: e.offsetX, sy: e.offsetY, vx: view.x, vy: view.y }; return; }
+
+  if (tool === "paint") {
+    if (e.button === 1) return;
+    const value = e.button === 2 ? 0 : 1;
+    pushUndo();
+    if (e.shiftKey) drag = { type: "paintRect", value, x0: snap(wx, CELL), y0: snap(wy, CELL), x1: snap(wx, CELL), y1: snap(wy, CELL) };
+    else { drag = { type: "paint", value }; paintAt(wx, wy, value); }
+    return;
+  }
+  if (tool === "path") {
+    if (e.button !== 0) { drag = { type: "pan", sx: e.offsetX, sy: e.offsetY, vx: view.x, vy: view.y }; return; }
+    const p = [snap(wx), snap(wy)];
+    if (!drawingPath) drawingPath = mk("path", { points: [p] });
+    else drawingPath.points.push(p);
+    requestDraw(); return;
+  }
+  if (tool.startsWith("place:")) {
+    if (e.button !== 0) { drag = { type: "pan", sx: e.offsetX, sy: e.offsetY, vx: view.x, vy: view.y }; return; }
+    const kind = tool.slice(6), k = KINDS[kind];
+    if (k.shape === "point") { placeObject(kind, wx, wy); return; }
+    drag = { type: "createRect", kind, x0: snap(wx), y0: snap(wy), x1: snap(wx), y1: snap(wy) };
+    return;
+  }
+  // Selección
+  if (e.button === 2) { drag = { type: "pan", sx: e.offsetX, sy: e.offsetY, vx: view.x, vy: view.y }; return; }
+  const h = handleAt(e.offsetX, e.offsetY);
+  if (h) { pushUndo(); drag = { ...h, moved: false }; return; }
+  const hit = hitTest(wx, wy);
+  if (hit) {
+    if (hit !== selected) { selected = hit; buildPanel(); }
+    drag = { type: "move", wx, wy, orig: JSON.parse(JSON.stringify(hit)), pushed: false };
+  } else {
+    if (selected) { selected = null; buildPanel(); }
+    drag = { type: "pan", sx: e.offsetX, sy: e.offsetY, vx: view.x, vy: view.y };
+  }
+  requestDraw();
+});
+
+cv.addEventListener("pointermove", (e) => {
+  mouse.sx = e.offsetX; mouse.sy = e.offsetY; mouse.inside = true;
+  [mouse.wx, mouse.wy] = toWorld(e.offsetX, e.offsetY);
+  const free = e.altKey;
+  const S = (v) => free ? v : snap(v);
+  if (drag) switch (drag.type) {
+    case "pan": view.x = drag.vx + e.offsetX - drag.sx; view.y = drag.vy + e.offsetY - drag.sy; break;
+    case "paint": paintAt(mouse.wx, mouse.wy, drag.value); break;
+    case "paintRect": case "createRect": {
+      const s = drag.type === "paintRect" ? CELL : SNAP;
+      drag.x1 = snap(mouse.wx, s); drag.y1 = snap(mouse.wy, s); break;
+    }
+    case "move": {
+      const dx = mouse.wx - drag.wx, dy = mouse.wy - drag.wy;
+      if (!drag.pushed && Math.hypot(dx, dy) * view.zoom < 3) break;
+      if (!drag.pushed) { pushUndo(); drag.pushed = true; }
+      const o = selected, g = drag.orig;
+      if (o.points) {
+        const ddx = S(dx), ddy = S(dy);
+        o.points = g.points.map(p => [p[0] + ddx, p[1] + ddy]);
+      } else { o.x = S(g.x + dx); o.y = S(g.y + dy); }
+      changed(); syncPositionFields(); break;
+    }
+    case "resize":
+      selected.w = Math.max(10, S(mouse.wx) - selected.x); selected.h = Math.max(10, S(mouse.wy) - selected.y);
+      drag.moved = true; changed(); syncPositionFields(); break;
+    case "vertex":
+      selected.points[drag.index] = [S(mouse.wx), S(mouse.wy)]; drag.moved = true; changed(); break;
+  }
+  if (tool === "select" && !drag) cv.style.cursor = handleAt(e.offsetX, e.offsetY) ? "nwse-resize" :
+    (hitTest(mouse.wx, mouse.wy) ? "move" : "grab");
+  else if (!drag || drag.type !== "pan") cv.style.cursor = "crosshair";
+  requestDraw();
+});
+cv.addEventListener("pointerleave", () => { mouse.inside = false; requestDraw(); });
+
+cv.addEventListener("pointerup", () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.type === "paintRect") {
+    const [x, y, w, h] = normRect(d);
+    for (let r = y / CELL; r < (y + h) / CELL; r++) for (let c = x / CELL; c < (x + w) / CELL; c++)
+      if (r >= 0 && c >= 0 && r < doc.rows && c < doc.cols) doc.cells[r * doc.cols + c] = d.value;
+    changed();
+  } else if (d.type === "createRect") {
+    let [x, y, w, h] = normRect(d);
+    const k = KINDS[d.kind];
+    if (w < 10 || h < 10) { w = k.w; h = k.h; x = snap(d.x0 - w / 2); y = snap(d.y0 - h / 2); }
+    pushUndo();
+    const o = mk(d.kind, { x, y, w, h });
+    if (k.fields.some(f => f.key === "id")) o.id = uniqueId(d.kind);
+    doc.objects.push(o); selected = o; changed(true);
+  }
+  requestDraw();
+});
+
+cv.addEventListener("dblclick", () => { if (tool === "path") finishPath(); });
+
+cv.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015));
+}, { passive: false });
+
+function zoomAt(sx, sy, factor) {
+  const [wx, wy] = toWorld(sx, sy);
+  view.zoom = Math.max(0.05, Math.min(3, view.zoom * factor));
+  view.x = sx - wx * view.zoom; view.y = sy - wy * view.zoom;
+  requestDraw();
+}
+function fitView() {
+  const W = cv.clientWidth || 800, H = cv.clientHeight || 600;
+  const MW = doc.cols * CELL, MH = doc.rows * CELL;
+  view.zoom = Math.min((W - 40) / MW, (H - 40) / MH);
+  view.x = (W - MW * view.zoom) / 2; view.y = (H - MH * view.zoom) / 2;
+  requestDraw();
+}
+
+function placeObject(kind, wx, wy) {
+  pushUndo();
+  const k = KINDS[kind];
+  let o;
+  if (k.shape === "rect") o = mk(kind, { x: snap(wx - k.w / 2), y: snap(wy - k.h / 2) });
+  else if (k.shape === "point") o = mk(kind, { x: snap(wx), y: snap(wy) });
+  else return;
+  if (k.fields && k.fields.some(f => f.key === "id")) o.id = uniqueId(kind);
+  if (OBSTACLE_TYPES.includes(kind) && (kind === "tree" || kind === "pine")) o.variant = Math.floor(Math.random() * (kind === "tree" ? 4 : 2));
+  doc.objects.push(o); selected = o; changed(true);
+  if (kind === "note") setTimeout(() => { const t = document.querySelector("#panel textarea"); if (t) t.focus(); }, 0);
+}
+
+function finishPath() {
+  if (!drawingPath) return;
+  const pts = drawingPath.points.filter((p, i, a) => i === 0 || p[0] !== a[i - 1][0] || p[1] !== a[i - 1][1]);
+  if (pts.length >= 2) {
+    pushUndo(); drawingPath.points = pts;
+    doc.objects.push(drawingPath); selected = drawingPath; changed(true);
+  }
+  drawingPath = null; requestDraw();
+}
+
+// Arrastrar desde la paleta al mapa
+cv.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; });
+cv.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const kind = e.dataTransfer.getData("text/kind");
+  if (!KINDS[kind] || KINDS[kind].shape === "path") return;
+  const [wx, wy] = toWorld(e.offsetX, e.offsetY);
+  placeObject(kind, wx, wy);
+});
+
+// =========================================================================
+// Teclado
+// =========================================================================
+document.addEventListener("keydown", (e) => {
+  const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(e.shiftKey); return; }
+  if (typing) { if (e.key === "Escape") document.activeElement.blur(); return; }
+  if (e.ctrlKey || e.metaKey) {
+    const k = e.key.toLowerCase();
+    if (k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+    else if (k === "y") { e.preventDefault(); redo(); }
+    else if (k === "d" && selected) { e.preventDefault(); duplicate(); }
+    return;
+  }
+  switch (e.key) {
+    case " ": spaceDown = true; cv.style.cursor = "grab"; e.preventDefault(); break;
+    case "Escape": drawingPath = null; drag = null; setTool("select"); break;
+    case "Enter": if (tool === "path") finishPath(); break;
+    case "Delete": case "Backspace": deleteSelected(); break;
+    case "v": case "V": setTool("select"); break;
+    case "b": case "B": setTool("paint"); break;
+    case "p": case "P": setTool("path"); break;
+    case "n": case "N": setTool("place:note"); break;
+    case "0": fitView(); break;
+    case "+": zoomAt(cv.clientWidth / 2, cv.clientHeight / 2, 1.25); break;
+    case "-": zoomAt(cv.clientWidth / 2, cv.clientHeight / 2, 0.8); break;
+    case "1": case "2": case "3": case "5": if (tool === "paint") { brushSize = +e.key; buildPalette(); } break;
+  }
+});
+document.addEventListener("keyup", (e) => { if (e.key === " ") spaceDown = false; });
+
+function deleteSelected() {
+  if (!selected) return;
+  pushUndo();
+  doc.objects = doc.objects.filter(o => o !== selected);
+  selected = null; changed(true);
+}
+function duplicate() {
+  pushUndo();
+  const c = JSON.parse(JSON.stringify(selected));
+  c.uid = uidCounter++;
+  if (c.points) c.points = c.points.map(p => [p[0] + 40, p[1] + 40]); else { c.x += 40; c.y += 40; }
+  if (c.id) c.id = uniqueId(c.kind);
+  doc.objects.push(c); selected = c; changed(true);
+}
+
+// =========================================================================
+// Paleta
+// =========================================================================
+function setTool(t) {
+  if (tool === "path" && t !== "path") finishPath();
+  tool = t; buildPalette(); requestDraw();
+}
+function buildPalette() {
+  const pal = $("palette"); pal.innerHTML = "";
+  const btn = (id, ico, label, key, draggableKind) => {
+    const b = document.createElement("button");
+    b.className = "tool" + (tool === id ? " active" : "");
+    b.innerHTML = `<span class="ico">${ico}</span><span>${label}</span>${key ? `<span class="key">${key}</span>` : ""}`;
+    b.onclick = () => setTool(tool === id && id !== "select" ? "select" : id);
+    if (draggableKind) {
+      b.draggable = true;
+      b.title = "Clic para colocar varios, o arrástralo al mapa";
+      b.ondragstart = (e) => e.dataTransfer.setData("text/kind", draggableKind);
+    }
+    pal.appendChild(b);
+    return b;
+  };
+  const title = (t) => { const d = document.createElement("div"); d.className = "group-title"; d.textContent = t; pal.appendChild(d); };
+  title("Herramientas");
+  btn("select", "🖱️", "Seleccionar / mover", "V");
+  btn("paint", "🖌️", "Pintar zona caminable", "B");
+  if (tool === "paint") {
+    const row = document.createElement("div"); row.className = "brush";
+    for (const s of [1, 2, 3, 5]) {
+      const b = document.createElement("button"); b.className = "btn" + (brushSize === s ? " active" : "");
+      b.textContent = `${s}×${s}`; b.onclick = () => { brushSize = s; buildPalette(); };
+      row.appendChild(b);
+    }
+    pal.appendChild(row);
+  }
+  const groups = {};
+  for (const [kind, k] of Object.entries(KINDS)) (groups[k.group] = groups[k.group] || []).push(kind);
+  for (const [g, kinds] of Object.entries(groups)) {
+    title(g);
+    for (const kind of kinds) {
+      const k = KINDS[kind];
+      if (k.shape === "path") btn("path", k.ico, k.label, "P");
+      else btn("place:" + kind, k.ico, k.label, kind === "note" ? "N" : "", kind);
+    }
+  }
+}
+
+// =========================================================================
+// Panel de propiedades
+// =========================================================================
+function el(tag, attrs = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith("on")) e[k] = v; else if (k === "class") e.className = v; else e.setAttribute(k, v);
+  }
+  for (const c of children) if (c != null) e.append(c);
+  return e;
+}
+
+// Cada campo hace pushUndo una sola vez por "sesión de edición"
+function bindInput(input, apply, rebuild = false) {
+  let pushed = false;
+  input.addEventListener("focus", () => { pushed = false; });
+  const handler = () => { if (!pushed) { pushUndo(); pushed = true; } apply(); changed(rebuild); };
+  input.addEventListener(input.type === "checkbox" || input.tagName === "SELECT" ? "change" : "input", handler);
+  return input;
+}
+
+function fieldInput(obj, f) {
+  const wrap = el("div");
+  if (f.type !== "checkbox") wrap.append(el("label", { class: "f" }, f.label));
+  let input;
+  if (f.type === "lines" || f.type === "textarea") {
+    input = el("textarea", { rows: f.type === "lines" ? 3 : 4 });
+    input.value = f.type === "lines" ? (obj[f.key] || []).join("\n") : (obj[f.key] || "");
+    bindInput(input, () => { obj[f.key] = f.type === "lines" ? input.value.split("\n").filter(s => s.trim()) : input.value; });
+  } else if (f.type === "select" || f.type === "secret") {
+    input = el("select");
+    const options = f.type === "secret"
+      ? [["", "(ninguno)"], ...doc.secrets.filter(s => s.id).map(s => [s.id, `${s.id}${s.name ? " · " + s.name : ""}`])]
+      : f.options;
+    const cur = obj[f.key] ?? "";
+    if (cur && !options.some(o => o[0] === cur)) options.push([cur, cur + " (no definido)"]);
+    for (const [v, l] of options) input.append(el("option", { value: v }, l));
+    input.value = cur;
+    bindInput(input, () => { obj[f.key] = input.value; });
+  } else if (f.type === "checkbox") {
+    input = el("input", { type: "checkbox" }); input.checked = !!obj[f.key];
+    bindInput(input, () => { obj[f.key] = input.checked; });
+    return el("label", { class: "f", style: "display:flex;gap:6px;align-items:center;color:var(--text)" }, input, f.label);
+  } else {
+    input = el("input", { type: f.type === "number" ? "number" : "text" });
+    input.value = obj[f.key] ?? "";
+    bindInput(input, () => { obj[f.key] = f.type === "number" ? (input.value === "" ? "" : +input.value) : input.value; },
+              f.key === "name" || f.key === "message" || f.key === "target_map");
+  }
+  wrap.append(input);
+  if (f.help) wrap.append(el("p", { class: "help" }, f.help));
+  return wrap;
+}
+
+function syncPositionFields() {
+  for (const k of ["x", "y", "w", "h"]) {
+    const inp = document.querySelector(`#panel input[data-pos=${k}]`);
+    if (inp && selected && document.activeElement !== inp) inp.value = Math.round(selected[k]);
+  }
+}
+
+function buildPanel() {
+  const p = $("panel"); p.innerHTML = "";
+  if (selected) buildObjectPanel(p); else buildMapPanel(p);
+  p.append(el("h3", {}, "Revisión"), el("div", { id: "warnings" }));
+  refreshWarnings();
+}
+
+function buildObjectPanel(p) {
+  const o = selected, k = KINDS[o.kind];
+  p.append(el("h2", {}, el("span", { style: 'font-family:"Segoe UI Emoji"' }, k.ico), k.label));
+  if (k.help) p.append(el("p", { class: "help" }, k.help));
+  // Posición
+  if (k.shape !== "path") {
+    const keys = k.shape === "rect" ? ["x", "y", "w", "h"] : ["x", "y"];
+    const labels = { x: "X", y: "Y", w: "Ancho", h: "Alto" };
+    const row = el("div", { class: "row" });
+    for (const key of keys) {
+      const inp = el("input", { type: "number", "data-pos": key, step: 10 }); inp.value = Math.round(o[key]);
+      bindInput(inp, () => { o[key] = +inp.value || 0; });
+      row.append(el("div", {}, el("label", { class: "f" }, labels[key]), inp));
+    }
+    p.append(row);
+    if (k.shape === "point") p.append(el("p", { class: "help" }, "La posición es la base del objeto (sus pies)."));
+  }
+  for (const f of k.fields || []) p.append(fieldInput(o, f));
+  if (o.kind !== "note") {
+    const box = el("div", { class: "note-box" });
+    box.append(fieldInput(o, F("note", "📝 Nota para Claude (para qué es, qué quieres que pase…)", "textarea")));
+    p.append(box);
+  }
+  p.append(el("div", { class: "row", style: "margin-top:14px" },
+    el("button", { class: "btn", onclick: duplicate }, "Duplicar (Ctrl+D)"),
+    el("button", { class: "btn danger", onclick: deleteSelected }, "Eliminar (Supr)")));
+}
+
+function buildMapPanel(p) {
+  p.append(el("h2", {}, "🗺️ Mapa"));
+  const field = (label, key, type = "text", rebuild = false) => {
+    const inp = el("input", { type }); inp.value = doc[key];
+    bindInput(inp, () => { doc[key] = type === "number" ? +inp.value : inp.value; }, rebuild);
+    return el("div", {}, el("label", { class: "f" }, label), inp);
+  };
+  p.append(field("ID del mapa (nombre del archivo)", "id"), field("Nombre visible", "name"));
+  const sizeRow = el("div", { class: "row" });
+  for (const [key, label] of [["cols", "Ancho (casillas)"], ["rows", "Alto (casillas)"]]) {
+    const inp = el("input", { type: "number", min: 5, max: 300 }); inp.value = doc[key];
+    inp.onchange = () => resizeMap(key === "cols" ? +inp.value : doc.cols, key === "rows" ? +inp.value : doc.rows);
+    sizeRow.append(el("div", {}, el("label", { class: "f" }, label), inp));
+  }
+  p.append(sizeRow, el("p", { class: "help" }, `1 casilla = ${CELL} px · tamaño: ${doc.cols * CELL} × ${doc.rows * CELL} px`));
+  const intI = el("input", { type: "checkbox" }); intI.checked = !!doc.interior;
+  bindInput(intI, () => { doc.interior = intI.checked; }, true);
+  p.append(el("label", { class: "f", style: "display:flex;gap:6px;align-items:center;color:var(--text)" }, intI,
+              "Interior (sin bosque alrededor, fondo negro)"));
+  if (!doc.interior) {
+    const seeds = el("div", { class: "row" }, field("Semilla bosque", "forestSeed", "number"), field("% pinos (0-1)", "pineRatio", "number"));
+    p.append(seeds);
+  }
+  const desc = el("div", { class: "note-box" });
+  const ta = el("textarea", { rows: 5 }); ta.value = doc.description || "";
+  bindInput(ta, () => { doc.description = ta.value; });
+  desc.append(el("label", { class: "f" }, "📝 Nota general del mapa para Claude (ambiente, historia, ideas…)"), ta);
+  p.append(desc);
+
+  p.append(el("h3", {}, "Secretos"));
+  p.append(el("p", { class: "help" }, "Defínelos aquí y luego elígelos en puertas secretas, objetos secretos, NPCs y zonas."));
+  doc.secrets.forEach((s, i) => {
+    const idI = el("input", { type: "text", placeholder: "id" }); idI.value = s.id;
+    const nmI = el("input", { type: "text", placeholder: "nombre" }); nmI.value = s.name || "";
+    const msg = el("input", { type: "text", placeholder: "Mensaje al desbloquear (p. ej. Has descubierto algo oculto...)",
+                              style: "grid-column:1/3" }); msg.value = s.unlock_message || "";
+    bindInput(idI, () => { s.id = idI.value.trim(); }); bindInput(nmI, () => { s.name = nmI.value; });
+    bindInput(msg, () => { s.unlock_message = msg.value; });
+    p.append(el("div", { class: "secret-row" }, idI, nmI,
+      el("button", { class: "x", title: "Quitar", onclick: () => { pushUndo(); doc.secrets.splice(i, 1); changed(true); } }, "✕"), msg));
+  });
+  p.append(el("button", { class: "btn", onclick: () => { pushUndo();
+    doc.secrets.push({ id: `secreto_${doc.secrets.length + 1}`, name: "", unlock_message: "Has descubierto algo oculto..." }); changed(true); } }, "+ Añadir secreto"));
+
+  p.append(el("h3", {}, "Controles"));
+  p.append(el("div", { class: "keys" }));
+  p.lastChild.innerHTML = `
+    <kbd>Rueda</kbd> zoom · <kbd>Espacio</kbd>+arrastrar o botón central: mover vista<br>
+    <kbd>V</kbd> seleccionar · <kbd>B</kbd> pintar · <kbd>P</kbd> camino · <kbd>N</kbd> nota<br>
+    <kbd>Supr</kbd> borrar · <kbd>Ctrl+D</kbd> duplicar · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd><br>
+    <kbd>Alt</kbd> mientras mueves: sin rejilla · <kbd>0</kbd> ver todo<br>
+    <kbd>Ctrl+S</kbd> guardar · <kbd>Esc</kbd> volver a seleccionar<br>
+    Puedes <b>arrastrar</b> elementos de la paleta al mapa.`;
+}
+
+function resizeMap(cols, rows) {
+  cols = Math.max(5, Math.min(300, cols | 0)); rows = Math.max(5, Math.min(300, rows | 0));
+  if (cols === doc.cols && rows === doc.rows) return;
+  pushUndo();
+  const cells = new Array(cols * rows).fill(0);
+  for (let r = 0; r < Math.min(rows, doc.rows); r++) for (let c = 0; c < Math.min(cols, doc.cols); c++)
+    cells[r * cols + c] = doc.cells[r * doc.cols + c];
+  doc.cols = cols; doc.rows = rows; doc.cells = cells; changed(true);
+}
+
+// =========================================================================
+// Revisión automática (avisos)
+// =========================================================================
+function computeWarnings() {
+  const w = [];
+  const objs = doc.objects;
+  const spawns = objs.filter(o => o.kind === "spawn");
+  if (!spawns.some(s => (s.name || "default") === "default")) w.push({ msg: "Falta un punto de aparición llamado «default» (inicio del jugador)." });
+  for (const s of spawns) if (!isWalkable(s.x, s.y)) w.push({ o: s, msg: `El punto de aparición «${s.name}» está dentro del bosque.` });
+  const secretIds = new Set(doc.secrets.map(s => s.id).filter(Boolean));
+  const ids = {};
+  for (const o of objs) {
+    const k = KINDS[o.kind], nm = o.name || o.id || k.label;
+    if (o.id) (ids[o.id] = ids[o.id] || []).push(o);
+    if (k.shape === "point" && !["note", "spawn", "tall_grass"].includes(o.kind) && !isWalkable(o.x, o.y))
+      w.push({ o, msg: `${k.label} «${nm}» está ${doc.interior ? "fuera de la zona caminable" : "dentro del bosque"}: el jugador no podrá llegar (o no se verá).` });
+    if (o.kind === "door" || o.kind === "secret_door") {
+      if (!isWalkable(o.x + o.w / 2, o.y + o.h / 2))
+        w.push({ o, msg: `${k.label} «${nm}»: pinta zona caminable bajo la puerta, si no seguirá bloqueada al abrirse.` });
+    }
+    for (const key of ["secret", "unlocks_secret", "requires_secret", "cond_secret"])
+      if (o[key] && !secretIds.has(o[key])) w.push({ o, msg: `${k.label} «${nm}» usa el secreto «${o[key]}», que no está definido.` });
+    if (o.kind === "hidden" && o.style === "dark" && !o.secret)
+      w.push({ o, msg: "Zona oscura sin secreto: nunca se iluminará." });
+    if (o.kind === "door" && o.key && !objs.some(c => c.kind === "chest" && c.item === o.key))
+      w.push({ o, info: true, msg: `${nm}: ningún cofre de este mapa da la llave «${o.key}» (quizá esté en otro mapa).` });
+    if (o.kind === "secret_door" && !o.secret) w.push({ o, msg: `Puerta secreta «${nm}» sin secreto asignado: nunca se abrirá.` });
+    if (o.kind === "exit" && !o.target_map) w.push({ o, info: true, msg: "Salida sin mapa destino: solo mostrará su mensaje." });
+    if (o.kind === "note" && !(o.text || "").trim()) w.push({ o, info: true, msg: "Hay una nota vacía." });
+  }
+  for (const [id, list] of Object.entries(ids)) if (list.length > 1) w.push({ o: list[1], msg: `ID repetido: «${id}».` });
+  if (!objs.some(o => o.kind === "exit")) w.push({ info: true, msg: "El mapa no tiene ninguna salida." });
+  return w;
+}
+
+function refreshWarnings() {
+  const box = $("warnings"); if (!box) return;
+  box.innerHTML = "";
+  const list = computeWarnings();
+  if (!list.length) { box.append(el("p", { class: "okmsg" }, "✓ Todo correcto.")); return; }
+  for (const it of list) {
+    box.append(el("div", { class: "warn" + (it.info ? " info" : ""), onclick: () => {
+      if (!it.o) return;
+      selected = it.o; buildPanel();
+      const k = KINDS[it.o.kind];
+      const [cx, cy] = k.shape === "point" ? [it.o.x, it.o.y] : k.shape === "rect" ? [it.o.x + it.o.w / 2, it.o.y + it.o.h / 2] : it.o.points[0];
+      view.x = cv.clientWidth / 2 - cx * view.zoom; view.y = cv.clientHeight / 2 - cy * view.zoom; requestDraw();
+    } }, it.msg));
+  }
+}
+
+// =========================================================================
+// Botones e inicio
+// =========================================================================
+$("bNew").onclick = () => {
+  if (dirty && !confirm("Hay cambios sin guardar. ¿Empezar un mapa nuevo?")) return;
+  pushUndo(); doc = newDoc(); fileHandle = null; selected = null; fitView(); changed(true); dirty = false; updateStatus();
+};
+$("bOpen").onclick = openFile;
+$("bSave").onclick = () => save(false);
+$("bSaveAs").onclick = () => save(true);
+$("bUndo").onclick = undo;
+$("bRedo").onclick = redo;
+$("bFit").onclick = fitView;
+window.addEventListener("resize", requestDraw);
+window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+(function init() {
+  let restored = false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (saved && saved.doc && saved.doc.cells) { doc = saved.doc; uidCounter = saved.uidCounter || 1000; restored = true; }
+  } catch (e) { /* sin almacenamiento */ }
+  if (!doc) doc = newDoc();
+  buildPalette(); buildPanel();
+  requestAnimationFrame(() => { fitView(); updateStatus(); if (restored) $("status").textContent += " · recuperado del autoguardado"; });
+})();
+
+// Acceso para pruebas automáticas
+window.__editor = { exportMap, importMap, get doc() { return doc; }, set doc(d) { doc = d; }, mergeCells, computeWarnings, newDoc };
+</script>
+</body>
+</html>

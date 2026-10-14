@@ -1,0 +1,9 @@
+{
+  "hospital": [
+    {"map": "hospital_lobby", "name": "Lobby", "requires": ["energia_lobby"]},
+    {"map": "hospital_piso1", "name": "Piso 1", "requires": ["energia_p1"]},
+    {"map": "hospital_piso2", "name": "Piso 2", "requires": ["energia_p2"]},
+    {"map": "hospital_piso3", "name": "Piso 3", "requires": ["energia_p3"]},
+    {"map": "hospital_piso4", "name": "Piso 4", "requires": ["energia_lobby", "energia_p1", "energia_p2", "energia_p3"], "unlock_message": "Todas las fuentes de energía están activas: el ascensor ya llega al Piso 4.", "no_power_text": ["El ascensor no responde."]}
+  ]
+}
