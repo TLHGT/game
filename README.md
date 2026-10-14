@@ -41,15 +41,19 @@ Los mapas se pueden dibujar con el diseñador visual de la carpeta
 
 ### Ejecutable para Windows
 
-El `.exe` del proyecto original no se ha copiado (no incluye el combate).
-Para generar uno nuevo con todo (el paquete `combate/` entra solo, porque el
-juego lo importa). Si junto al `.exe` existe una carpeta `maps/` o `assets/`,
-se usa esa en lugar de la empaquetada:
+`dist/HospitalAbandonado.exe` es el juego del hospital en un solo archivo:
+no necesita Python ni nada instalado (se publica en las *releases* de GitHub).
+Solo lleva los mapas del hospital (`hospital_*.json` + `elevators.json`) y
+`assets/`; el bosque y el duelo PvP no entran. Para regenerarlo:
 
 ```bash
 pip install pyinstaller
-pyinstaller --noconfirm --onefile --windowed --name BosqueDeArken --add-data "maps;maps" --add-data "assets;assets" main.py
+python tools/build_exe.py
 ```
+
+Si junto al `.exe` existe una carpeta `maps/` o `assets/`, se usa esa en lugar
+de la empaquetada. Los mazos editados se guardan en `decks_hospital.json`
+junto al `.exe`.
 
 Pruebas automáticas (sin ventana):
 
@@ -412,6 +416,7 @@ tests/
   pathing.py                buscador de caminos de las pruebas (¿se puede llegar de A a B?)
 tools/
   generar_hospital.py       genera los pisos del hospital
+  build_exe.py              genera dist/HospitalAbandonado.exe (solo el hospital)
   battle_test.py            exploración + combate
 ```
 
