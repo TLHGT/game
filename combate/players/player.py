@@ -13,6 +13,7 @@ class Player:
         self.max_hp_lost = 0          # vida máxima que le han quitado en este combate (Void consumption)
         self.mana = rules.STARTING_MANA
         self.max_mana = rules.MAX_MANA  # tope de Mana (algunos enemigos lo reducen en combate)
+        self.damage_taken_mult = 1    # multiplica el daño que recibe (enemigos de los que se puede huir: x2)
         self.stable = True
         self.combo_hits = 0           # cadena de hits CONSECUTIVOS (propia de cada jugador)
         self.hand = []

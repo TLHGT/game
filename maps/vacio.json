@@ -1,0 +1,22 @@
+{
+  "id": "vacio",
+  "name": "Dimensión del vacío",
+  "description": "Tercera versión: una isla de roca flotando en el vacío. Por ahora solo hay un espacio abierto para caminar y el Void Insect.",
+  "size": [2400, 2000],
+  "spawns": {
+    "default": [1200, 1480]
+  },
+  "walkable": [
+    [400, 400, 1600, 1200]
+  ],
+  "ground": {
+    "seed": 13,
+    "theme": "void",
+    "details": [
+      {"type": "void_cracks", "rect": [480, 480, 1440, 1040], "count": 18}
+    ]
+  },
+  "interactables": [
+    {"type": "enemy", "id": "void_insect", "name": "Void Insect", "sprite": "void_insect", "pos": [1200, 640], "verb": "Enfrentarse", "deck": "void_insect", "character": "void_insect", "hp": 100, "aggression": 0.2, "randomness": 0.5, "behavior": "guard", "aggro": 0, "can_flee": false, "intro": ["El insecto flota en el centro de la nada. Cientos de ojos te reflejan a la vez.", "Aquí no hay portal ni barrera: solo él y tú."], "victory": ["El insecto se encoge, se retuerce... y el vacío se lo traga sin hacer ruido."], "note": "Jefe de la dimensión del vacío: sin barrera, se le puede retar directamente."}
+  ]
+}

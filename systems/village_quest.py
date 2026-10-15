@@ -9,7 +9,7 @@ El mapa cambia con cada paso (FASE, flag "aldea_fase"; ver world/map.py):
                 herrería y el mercado.
     2 ALMAS     Se apagan las llamas y aparecen tres círculos del vacío (granja,
                 herrería, mercado). Cada aldeano hueco vencido deja su alma (solo
-                se lleva una a la vez). Cada círculo pide 3 almas de su oficio; un
+                se lleva una a la vez). Cada círculo pide SOULS_PER_CIRCLE almas (1) de su oficio; un
                 alma equivocada hace escapar todas las de ese círculo.
     3 PORTAL    Aparecen plataformas flotantes hasta el portal (se suben saltando
                 con Hero). El Void Insect está tras una barrera que solo rompe la
@@ -41,7 +41,8 @@ WELLS = 3                       # pozos pozo_1..pozo_3
 TRADES = ("herrero", "granjero", "vendedor")
 TRADE_NAMES = {"herrero": "herrero", "granjero": "granjero", "vendedor": "vendedor"}
 CIRCLE_PLACES = {"herrero": "la herrería", "granjero": "la granja", "vendedor": "el mercado"}
-SOULS_PER_CIRCLE = 3
+SOULS_PER_CIRCLE = 1             # almas de su oficio que pide cada círculo
+SOULS_REQUIRED = True            # False: los círculos se encienden al tocarlos, sin almas
 PARTS = (("parte_pata", "una Pata del vacío"), ("parte_ala", "un Ala del vacío"),
          ("parte_aguijon", "un Aguijón del vacío"))
 VOID_CARD = "void_impact"
@@ -174,6 +175,14 @@ class VillageQuest:
         "wrong" (alma de otro oficio: escapan las del círculo)."""
         if self.circle_done(circle):
             return "complete"
+        if not SOULS_REQUIRED:          # momentáneo: tocar el círculo lo llena
+            circles = dict(self._get("circles", {}))
+            circles[circle] = SOULS_PER_CIRCLE
+            self._set("circles", circles)
+            if not all(self.circle_done(t) for t in TRADES):
+                return "filled"
+            self.set_phase(PORTAL)
+            return "all"
         soul = self.soul
         if not soul:
             return "empty"
@@ -198,6 +207,16 @@ class VillageQuest:
 
     def parts_found(self, inventory):
         return sum(1 for pid, _ in PARTS if inventory.has(pid))
+
+    def part_taken(self, pid):
+        """True si esa parte ya se recogió en esta partida (no vuelve a aparecer,
+        aunque el yunque la gaste al forjar Void Impact)."""
+        return pid in self._get("parts_taken", [])
+
+    def take_part(self, pid):
+        taken = list(self._get("parts_taken", []))
+        if pid not in taken:
+            self._set("parts_taken", taken + [pid])
 
     # --- Easter eggs ---------------------------------------------------------------
     def has_plush(self, house):

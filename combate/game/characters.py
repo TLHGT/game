@@ -447,7 +447,8 @@ register_character(Character(
     passive_id="consecutive_momentum",
     passive_config={"hit_bonus_pct": {1: 0, 2: 5, 3: 10}, "mega_bonus_pct": 15},
     adventure="jump", adventure_name="Saltar",
-    adventure_desc="Salta a lugares altos desde los puntos de salto."))      # avatar por defecto, por ahora
+    adventure_desc="Salta a lugares altos desde los puntos de salto.",
+    avatar="avatar_hero"))          # skin: sudadera blanca, vaqueros y el pelo de Sandalphon (GBF)
 
 register_character(Character(
     id="jurgenoid", name="Jurgenoid",

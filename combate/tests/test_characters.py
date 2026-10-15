@@ -309,7 +309,7 @@ class TestAvatars(unittest.TestCase):
     def test_avatars(self):
         self.assertEqual(CHARACTERS["blaze"].avatar, "avatar_blaze")
         self.assertEqual(CHARACTERS["jurgenoid"].avatar, "avatar_jurgenoid")
-        self.assertIsNone(CHARACTERS["hero"].avatar)
+        self.assertEqual(CHARACTERS["hero"].avatar, "avatar_hero")
 
 
 if __name__ == "__main__":

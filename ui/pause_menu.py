@@ -46,7 +46,9 @@ class PauseMenu:
     @property
     def deck(self):
         name = self.state.get_flag("combat_deck", settings.PLAYER_DECK)
-        return name if name in self.deck_names else self.deck_names[0]
+        if name in self.deck_names or not self.deck_names:
+            return name
+        return self.deck_names[0]
 
     def open(self):
         self.is_open = True

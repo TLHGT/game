@@ -233,7 +233,7 @@ def main():
     b.tick(1, [key_event(pygame.K_ESCAPE)])
     b.tick(3)
     b.check(g.pause.character == "hero" and g.ability == "jump", "Cambio a Hero: habilidad Saltar")
-    b.check(g.player.sprite_key.startswith("player_"), "Hero aún no tiene avatar propio: usa el de por defecto")
+    b.check(g.player.sprite_key.startswith("avatar_hero_"), "Hero se ve con su skin (sudadera blanca y vaqueros)")
     b.check(b.target_id() == "salto_plataforma"
             and g.world.get_interactable("salto_plataforma").get_prompt() == "E - Saltar arriba",
             "Con Hero aparece «E - Saltar arriba»")
@@ -362,7 +362,7 @@ def main():
     foe = g.battle.engine.players[1]
     me = g.battle.engine.players[0]
     mine = [c.id for c in me.deck.draw_pile + me.deck.discard_pile + me.hand]
-    b.check(foe.character.id == "elemental_wolf" and g.battle.player_deck == "hospital"
+    b.check(foe.character.id == "elemental_wolf" and g.battle.player_deck == g.battle_deck("hospital")
             and {"fire_bolt", "ice_shard"} <= set(mine), "Elemental Wolf, y tú con tu mazo (ya con Fire Bolt e Ice Shard)")
     b.tick(120)
     b.shot("h05_combate_jefe")

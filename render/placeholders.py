@@ -33,14 +33,13 @@ def _circle(s, color, center, r, outline=True):
 # Personajes
 # ---------------------------------------------------------------------------
 def _humanoid(direction, frame, tunic, skin=(238, 198, 158), hair=(86, 54, 36),
-              scarf=None, hat=None, hood=None, beard=None, w=34, h=56):
+              scarf=None, hat=None, hood=None, beard=None, w=34, h=56, legs=(58, 50, 46)):
     s = _surf(w, h)
     cx = w // 2
     feet = h - 2
     # Piernas (alternan al andar)
     lift_l = 3 if frame == 1 else 0
     lift_r = 3 if frame == 2 else 0
-    legs = (58, 50, 46)
     if direction in ("left", "right"):
         step = 3 if frame == 1 else (-3 if frame == 2 else 0)
         for dx in (-step, step):
@@ -122,7 +121,7 @@ def player(direction="down", frame=0):
 # Clave: "avatar_<id>_<dirección>_<paso>". Sin avatar propio -> player().
 # ---------------------------------------------------------------------------
 def avatar(name, direction="down", frame=0):
-    maker = {"blaze": blaze, "jurgenoid": jurgenoid}.get(name)
+    maker = {"blaze": blaze, "jurgenoid": jurgenoid, "hero": hero}.get(name)
     return maker(direction, frame) if maker else player(direction, frame)
 
 
@@ -157,6 +156,132 @@ def blaze(direction="down", frame=0):
         _flame(s, cx + 12, feet - 15, 3, flick)
     elif direction in ("left", "right"):
         _flame(s, cx + (-6 if direction == "left" else 6), feet - 15, 3, flick)
+    return s
+
+
+def hero(direction="down", frame=0):
+    """Hero: sudadera blanca con capucha (bajada a la espalda, cordones y
+    bolsillo delantero), pantalones vaqueros, el pelo castaño de Sandalphon de
+    Granblue Fantasy (corto y ondulado), ojos azules y espada a la espalda."""
+    W, H = 64, 74
+    s = _surf(W, H)
+    white, white_dark = (242, 242, 238), (214, 216, 218)
+    denim, denim_dark, stitch = (66, 104, 160), (46, 74, 120), (214, 170, 92)
+    metal, metal_dark = (186, 192, 200), (120, 126, 136)
+    hair, hair_dark, hair_hi = (128, 84, 50), (92, 58, 34), (166, 116, 72)
+    mako = (110, 200, 255)
+    back = direction == "up"
+    side = direction in ("left", "right")
+    base = _humanoid(direction, frame, tunic=white, hair=hair, w=34, h=60, legs=denim)
+    bx, by = (W - 34) // 2, H - 60
+    cx, feet = W // 2, H - 2
+    hx, hy = cx, feet - 41                       # centro de la cabeza de _humanoid
+    body_top = feet - 30
+
+    def sword(over):
+        """Fusion Sword cruzada a la espalda: empuñadura sobre el hombro derecho."""
+        if side:
+            d = 1 if direction == "left" else -1          # la espalda queda a este lado
+            hilt = (cx + d * 4, body_top - 14)
+            tip = (cx + d * 17, feet - 6)
+        else:
+            d = -1 if direction == "down" else 1           # hombro derecho del personaje
+            hilt = (cx + d * 12, body_top - 10)
+            tip = (cx - d * 14, feet - 6)
+        if not over:
+            # Hoja ancha: polígono a lo largo de la línea empuñadura -> punta
+            vx, vy = tip[0] - hilt[0], tip[1] - hilt[1]
+            n = math.hypot(vx, vy) or 1
+            px, py = -vy / n * 5, vx / n * 5
+            start = (hilt[0] + vx * 0.18, hilt[1] + vy * 0.18)
+            pts = [(start[0] + px, start[1] + py), (tip[0] + px * 0.6, tip[1] + py * 0.6), tip,
+                   (start[0] - px, start[1] - py)]
+            pygame.draw.polygon(s, metal, pts)
+            pygame.draw.polygon(s, OUTLINE, pts, 2)
+            pygame.draw.line(s, metal_dark, start, tip, 2)                                  # canal
+        # Guarda y empuñadura (siempre asoman por encima del hombro)
+        gx, gy = hilt[0] + (tip[0] - hilt[0]) * 0.18, hilt[1] + (tip[1] - hilt[1]) * 0.18
+        pygame.draw.line(s, OUTLINE, hilt, (gx, gy), 5)
+        pygame.draw.line(s, (70, 56, 46), hilt, (gx, gy), 3)
+        pygame.draw.circle(s, OUTLINE, (round(gx), round(gy)), 4)
+        pygame.draw.circle(s, metal_dark, (round(gx), round(gy)), 3)
+
+    if not back:
+        sword(over=False)
+    s.blit(base, (bx, by))
+    # Vaqueros: costuras y bajos más oscuros
+    for lx in ((cx - 1,) if side else (cx - 8, cx + 2)):
+        pygame.draw.line(s, denim_dark, (lx + 3, feet - 11), (lx + 3, feet - 3), 1)
+        pygame.draw.line(s, stitch, (lx + 1, feet - 11), (lx + 1, feet - 6), 1)
+        pygame.draw.rect(s, denim_dark, (lx, feet - 4, 7, 2))
+    # Sudadera: banda de abajo (tapa el cinturón de _humanoid)
+    band = pygame.Rect(cx - 10, body_top + 12, 20, 6)
+    pygame.draw.rect(s, white_dark, band, border_radius=2)
+    pygame.draw.line(s, (170, 172, 176), (band.x + 1, band.y), (band.right - 2, band.y), 1)
+    if direction == "down":
+        pocket = pygame.Rect(cx - 6, body_top + 7, 12, 6)                                   # bolsillo canguro
+        pygame.draw.rect(s, white_dark, pocket, border_radius=2)
+        pygame.draw.line(s, (170, 172, 176), pocket.topleft, (pocket.right - 1, pocket.y), 1)
+        for dx in (-3, 3):                                                                   # cordones
+            pygame.draw.line(s, (150, 150, 156), (cx + dx, body_top + 1), (cx + dx, body_top + 6), 1)
+            pygame.draw.circle(s, (150, 150, 156), (cx + dx, body_top + 6), 1)
+    # Capucha bajada: se ve tras el cuello (de espaldas, entera)
+    if back:
+        hood = pygame.Rect(hx - 9, hy + 4, 18, 13)
+        pygame.draw.ellipse(s, OUTLINE, hood.inflate(3, 3))
+        pygame.draw.ellipse(s, white, hood)
+        pygame.draw.arc(s, white_dark, hood.inflate(-6, -4), 3.4, 6.0, 2)
+    else:
+        collar = pygame.Rect(hx - 9, hy + 6, 18, 6)
+        pygame.draw.rect(s, OUTLINE, collar.inflate(2, 2), border_radius=3)
+        pygame.draw.rect(s, white, collar, border_radius=3)
+        if direction == "down":
+            pygame.draw.polygon(s, white_dark, [(hx - 3, hy + 7), (hx + 3, hy + 7), (hx, hy + 11)])
+        else:
+            d = 1 if direction == "left" else -1                                             # la capucha, detrás
+            pygame.draw.ellipse(s, OUTLINE, (hx + d * 6 - 6, hy + 3, 12, 11))
+            pygame.draw.ellipse(s, white, (hx + d * 6 - 5, hy + 4, 10, 9))
+    # Pelo de Sandalphon (Granblue Fantasy): corto, suave y algo ondulado, con
+    # volumen arriba, flequillo barrido hacia un lado y la nuca corta
+    face = {"left": -1, "right": 1}.get(direction, 0)
+    pygame.draw.ellipse(s, OUTLINE, (hx - 13, hy - 15, 26, 17))
+    pygame.draw.ellipse(s, hair, (hx - 12, hy - 14, 24, 15))                          # volumen
+    for dx, dy, r in ((-8, -9, 5), (-2, -12, 5), (5, -11, 5), (10, -6, 4), (-11, -4, 4)):
+        pygame.draw.circle(s, hair, (hx + dx - face * 2, hy + dy), r)                 # ondas
+    pygame.draw.arc(s, hair_hi, (hx - 9, hy - 14, 14, 9), 0.6, 2.6, 2)               # brillo
+    if back:
+        pygame.draw.circle(s, hair, (hx, hy - 1), 11)
+        for dx in (-6, 0, 6):                                                          # nuca corta
+            pygame.draw.circle(s, hair_dark, (hx + dx, hy + 7), 3)
+        pygame.draw.arc(s, hair_hi, (hx - 7, hy - 9, 14, 10), 0.5, 2.6, 1)
+    else:
+        if direction == "down":
+            # Flequillo barrido hacia su derecha (izquierda de la pantalla)
+            pygame.draw.polygon(s, hair, [(hx - 11, hy - 6), (hx + 9, hy - 7), (hx + 4, hy - 3),
+                                          (hx - 4, hy - 2), (hx - 11, hy + 3)])
+            pygame.draw.polygon(s, hair, [(hx + 6, hy - 7), (hx + 11, hy - 5), (hx + 10, hy + 2)])
+            pygame.draw.line(s, hair_dark, (hx - 6, hy - 5), (hx - 9, hy + 1), 1)
+            pygame.draw.line(s, hair_dark, (hx + 1, hy - 6), (hx - 2, hy - 2), 1)
+            for dx in (-11, 10):                                                       # patillas
+                pygame.draw.rect(s, hair, (hx + dx - 1, hy - 4, 3, 9), border_radius=1)
+        else:
+            front, back_x = hx + face * 11, hx - face * 11
+            pygame.draw.polygon(s, hair, [(hx - face * 4, hy - 7), (front, hy - 6), (front - face, hy - 1),
+                                          (hx + face * 4, hy - 3)])                     # flequillo
+            pygame.draw.rect(s, hair, (min(back_x, hx - face * 2) - (0 if face > 0 else 0),
+                                       hy - 7, 10, 12), border_radius=4)               # lado y nuca
+            pygame.draw.circle(s, hair_dark, (back_x + face * 2, hy + 5), 3)
+            pygame.draw.line(s, hair_dark, (hx + face * 2, hy - 6), (hx + face * 6, hy - 2), 1)
+        # Ojos de Mako
+        if direction == "down":
+            pygame.draw.rect(s, mako, (hx - 5, hy + 1, 3, 3))
+            pygame.draw.rect(s, mako, (hx + 3, hy + 1, 3, 3))
+        else:
+            pygame.draw.rect(s, mako, (hx + (-7 if direction == "left" else 5), hy + 1, 3, 3))
+    if back:
+        sword(over=False)
+    else:
+        sword(over=True)            # la empuñadura asoma por delante del hombro
     return s
 
 

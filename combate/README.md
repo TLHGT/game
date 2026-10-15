@@ -203,6 +203,8 @@ forma anterior (desestabilizar, un Mega Combo) le llegan igual.
   La pantalla cambia el sprite con el evento `transform`.
 - `engine.reduce_max_mana(i, n)` y `engine.reduce_max_hp(i, pct)`: el HUD tacha los
   huecos de Mana y el tramo de vida máxima perdidos.
+- `Player.damage_taken_mult` (1 por defecto): multiplica todo el daño que recibe ese
+  jugador, también BURN/POISON. La exploración pone x2 a los enemigos de los que se puede huir.
 
 **Cartas bloqueadas** (solo en la exploración): `DeckEditor(store, locked=...)`
 recibe las cartas que aún no se pueden usar; salen en gris en el catálogo, no se

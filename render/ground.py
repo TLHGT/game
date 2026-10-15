@@ -3,8 +3,10 @@
 Lee la sección "ground" del JSON:
     "ground": {
       "seed": 1,
-      "theme": "forest" | "cave" | "ashes",   # cave: roca oscura fuera, tierra de cueva dentro;
-                                      # ashes: bosque y hierba quemados (aldea del vacío)
+      "theme": "forest" | "cave" | "ashes" | "void",   # cave: roca oscura fuera, tierra de cueva dentro;
+                                      # ashes: bosque y hierba quemados (aldea del vacío);
+                                      # void: cielo del vacío alrededor y suelo de roca
+                                      # violeta flotante (dimensión del vacío)
       "background": "void",           # interiores: fuera de las salas no hay nada
       "areas":   [{"type": "stone" | "stairs" | "dirt" | "tiles" | "planks" | "field"
                            | "void_sky" | "platform", "rect": [x, y, w, h]}],
@@ -57,9 +59,12 @@ def build_ground(world, assets):
     forest_tile = assets.get_tile("ground_forest")
     cave = spec.get("theme") == "cave"
     ashes = spec.get("theme") == "ashes"
+    dimension = spec.get("theme") == "void"
     void = spec.get("background") == "void"
     phase = getattr(world, "phase", None)
-    if void:
+    if dimension:
+        _void_sky(surf, surf.get_rect(), rng)
+    elif void:
         surf.fill((14, 14, 18))     # interiores: fuera de las salas no hay nada
     elif ashes:
         surf.fill(ASH_FLOOR)
@@ -82,7 +87,9 @@ def build_ground(world, assets):
     # 2. Suelo de las zonas caminables -----------------------------------
     #    bosque: hierba con borde suave; cueva: tierra; interior: nada
     #    (en los interiores lo pintan las áreas "tiles").
-    if cave:
+    if dimension:
+        _void_floor(surf, world.walkable, rng)
+    elif cave:
         _cave_floor(surf, world.walkable, rng)
     elif ashes:
         _ash_floor(surf, [r for r in world.walkable if not _in_sky(r, spec)], rng)
@@ -142,7 +149,8 @@ def build_ground(world, assets):
                 pygame.draw.ellipse(surf, (110, 140, 170), (x + w // 4, y + 2, w // 3, 3))
 
     # 6. Sombra del bosque sobre los bordes de las zonas caminables -------
-    _forest_shadow(surf, world, (0, 0, 0, 170) if cave else (10, 4, 6, 140) if ashes else (6, 20, 10, 120))
+    if not dimension:
+        _forest_shadow(surf, world, (0, 0, 0, 170) if cave else (10, 4, 6, 140) if ashes else (6, 20, 10, 120))
 
     # 7. Cielo del vacío y plataformas flotantes: encima de la sombra del bosque
     for area in spec.get("areas", []):
@@ -234,6 +242,26 @@ def _platform(surf, r, rng):
     for _ in range(r.w * r.h // 700):
         x, y = rng.randint(r.left + 6, r.right - 20), rng.randint(r.top + 6, r.bottom - 12)
         pygame.draw.ellipse(surf, rng.choice([(126, 118, 122), (96, 90, 98)]), (x, y, rng.randint(10, 24), rng.randint(6, 10)))
+
+
+def _void_floor(surf, walkable, rng):
+    """Dimensión del vacío: roca violeta oscura que flota sobre el cielo, con
+    un brillo morado en el borde y la parte de abajo rota."""
+    for r in walkable:
+        glow = pygame.Surface((r.w + 80, r.h + 80), pygame.SRCALPHA)
+        pygame.draw.rect(glow, (170, 90, 230, 50), glow.get_rect(), border_radius=60)
+        surf.blit(glow, (r.left - 40, r.top - 40))
+        under = [(r.left + 20, r.bottom - 10), (r.right - 20, r.bottom - 10), (r.right - 80, r.bottom + 50),
+                 (r.centerx + 40, r.bottom + 90), (r.centerx - 60, r.bottom + 70), (r.left + 70, r.bottom + 40)]
+        pygame.draw.polygon(surf, (34, 24, 44), under)
+        pygame.draw.rect(surf, (20, 14, 28), r.inflate(12, 12), border_radius=40)
+    for r in walkable:
+        pygame.draw.rect(surf, (52, 40, 70), r, border_radius=36)
+        for _ in range(r.w * r.h // 600):
+            x, y = rng.randint(r.left + 10, r.right - 30), rng.randint(r.top + 10, r.bottom - 20)
+            pygame.draw.ellipse(surf, rng.choice([(60, 46, 80), (44, 34, 60), (66, 52, 88)]),
+                                (x, y, rng.randint(12, 30), rng.randint(6, 12)))
+        pygame.draw.rect(surf, (150, 90, 210), r, 3, border_radius=36)
 
 
 def _void_crack(surf, x, y, rng):

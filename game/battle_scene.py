@@ -7,7 +7,9 @@ mismos. Cambia solo lo necesario para jugar contra un enemigo del mapa:
     - el jugador 2 lo controla la IA (combate/game/ai.py) y su mano va boca abajo;
     - solo se aceptan las teclas y clics del jugador 1;
     - ESC huye (si el enemigo lo permite) y, al terminar, CONTINUAR vuelve al mapa;
-    - TAB abre el registro del combate (combate/ui/battle_log.py) y lo pausa.
+    - los enemigos de los que se puede huir reciben el doble de daño;
+    - TAB abre el registro del combate (combate/ui/battle_log.py) y lo pausa;
+      con el ratón sobre el nombre de una carta se ve la carta en grande.
 
 Al acabar, `finished` pasa a True y `result` vale "win", "lose", "draw" o "flee".
 """
@@ -27,10 +29,12 @@ from combate.ui.battle_screen import View
 
 AI_THINK_TIME = 0.7      # segundos que "piensa" la IA antes de cada decisión
 PLAYER, ENEMY = 0, 1
+FLEEABLE_DAMAGE_MULT = 2  # daño que reciben los enemigos de los que se puede huir
 
 
 def enemy_cards(deck):
-    """`deck` puede ser el nombre de un mazo o una lista de ids de carta."""
+    """`deck` puede ser el nombre de un mazo o una lista de ids de carta (también
+    para el mazo del jugador)."""
     if isinstance(deck, str):
         return make_deck_cards(deck)
     return [make_card(cid) for cid in deck]
@@ -63,13 +67,15 @@ class BattleScene(App):
         self.new_game()
 
     def new_game(self):
-        cards = (make_deck_cards(self.player_deck), enemy_cards(self.enemy.deck))
+        cards = (enemy_cards(self.player_deck), enemy_cards(self.enemy.deck))
         self.engine = CombatEngine(card_lists=cards, seed=self.seed, characters=self.characters,
                                    names=(self.player_name, self.enemy.name.upper()))
         self.view = View(self.engine.rules)
         self.view.ai_players = {ENEMY}
         self.view.exit_label = "CONTINUAR"
         self.view.fighter_keys[ENEMY] = self.enemy.sprite_key     # el mismo aspecto que en el mapa
+        if self.enemy.can_flee:         # de los enemigos de los que se puede huir: daño x2
+            self.engine.players[ENEMY].damage_taken_mult = FLEEABLE_DAMAGE_MULT
         if self.enemy.hp:
             foe = self.engine.players[ENEMY]
             foe.hp = foe.max_hp = max(1, min(RULES.MAX_HP, self.enemy.hp))
@@ -99,6 +105,8 @@ class BattleScene(App):
                 self.log_scroll -= 10
         elif ev.type == pygame.MOUSEWHEEL:
             self.log_scroll += ev.y * 3
+        elif ev.type == pygame.MOUSEMOTION:
+            self.view.hover = ev.pos
         self.log_scroll = max(0, min(self.log_scroll, self._log_max_scroll))
 
     def step(self, dt, events):
@@ -167,5 +175,6 @@ class BattleScene(App):
             hint = "ESC: huir del combate" if self.enemy.can_flee else "¡No puedes huir de este combate!"
             T.text(self.screen, f"{hint}  ·  TAB: registro", 14, T.DIM, (24, 476), "midleft", bold=False)
         if self.log_open:
-            self._log_max_scroll = draw_battle_log(self.screen, self.log, self.engine, self.log_scroll)
+            self._log_max_scroll = draw_battle_log(self.screen, self.log, self.engine, self.log_scroll,
+                                                  self.view.hover)
 

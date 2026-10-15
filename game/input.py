@@ -67,8 +67,8 @@ class InputHandler:
                 self._add_joystick(event.device_index)
             elif event.type == pygame.JOYDEVICEREMOVED:
                 self.joysticks.pop(event.instance_id, None)
-        if "quit" in self._pressed:
-            self.quit_requested = True
+        # ESC ("quit") no cierra: el juego pregunta antes (Game.ask_quit).
+        # Solo cerrar la ventana activa quit_requested.
 
     def pressed(self, action):
         """True solo en el frame en que se pulsó la acción."""

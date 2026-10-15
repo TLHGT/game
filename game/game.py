@@ -89,6 +89,8 @@ class Game:
         # (combate/decks.json) no se toca.
         self.store = DeckStore(path=settings.DECKS_PATH, builtins={settings.PLAYER_DECK: settings.HOSPITAL_DECK},
                                unique=True)
+        if settings.RESET_DECK_ON_START:            # cada partida empieza con el mazo por defecto
+            self.store.restore(settings.PLAYER_DECK)
         self.store.apply()
         self.pause = PauseMenu(self.state, self.usable_decks(), self.assets)   # TAB: personaje y mazo
         self.deck_scene = None          # editor de mazos abierto desde la pausa
@@ -118,6 +120,14 @@ class Game:
     def unlock_secret(self, secret_id):
         return self.secrets.unlock(secret_id)
 
+    def ask_quit(self):
+        """ESC: «¿Seguro que quieres salir?» (por defecto, No)."""
+        def chosen(leave):
+            if leave:
+                self.running = False
+        self.open_choice("¿Seguro que quieres salir?", [("No, seguir jugando", True, False),
+                                                       ("Sí, salir del juego", True, True)], chosen)
+
     def open_choice(self, title, options, on_choose):
         """Menú de elección: [(texto, disponible, valor)] -> on_choose(valor)."""
         self.player.stop()
@@ -138,9 +148,18 @@ class Game:
                 if c not in settings.AVAILABLE_CARDS and not self.state.inventory.has(CARD_PREFIX + c)}
 
     def usable_decks(self):
-        """Mazos que se pueden elegir: los que no llevan cartas bloqueadas."""
+        """Mazos que se pueden elegir: los que no llevan cartas bloqueadas. Si
+        todos llevan alguna (p. ej. un mazo guardado en otra partida con Void
+        Impact ya forjada), se ofrecen todos y en combate se quitan esas cartas."""
         locked = self.locked_cards()
-        return [n for n in self.store.names() if not locked & set(self.store.get(n))]
+        names = self.store.names()
+        return [n for n in names if not locked & set(self.store.get(n))] or names
+
+    def battle_deck(self, name):
+        """Cartas del mazo `name` para un combate, sin las bloqueadas."""
+        locked = self.locked_cards()
+        ids = [c for c in self.store.get(name) if c not in locked] if self.store.exists(name) else []
+        return ids or [c for c in settings.HOSPITAL_DECK if c not in locked]
 
     def on_card_unlocked(self, card_id):
         self.pause.refresh_decks(self.usable_decks())
@@ -279,8 +298,8 @@ class Game:
         self._pending_battle = enemy
 
     def _open_battle(self, enemy):
-        # Lo elegido en la pausa (nunca un mazo con cartas bloqueadas)
-        deck, character = self.pause.deck, self.pause.character
+        # Lo elegido en la pausa (nunca con cartas bloqueadas)
+        deck, character = self.battle_deck(self.pause.deck), self.pause.character
         self.battle = BattleScene(self.screen, enemy, deck, character, settings.PLAYER_COMBAT_NAME)
 
     def _end_battle(self):
@@ -408,6 +427,9 @@ class Game:
         self.input.process_events(events)
         if self.input.quit_requested:
             self.running = False
+        if self.input.pressed("quit") and self._pending_map is None and self._pending_battle is None:
+            self.ask_quit()
+            return
         if self.input.pressed("debug"):
             self.debug.toggle()
         if self.input.pressed("pause") and not self.busy:

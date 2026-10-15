@@ -19,8 +19,10 @@ disponible (`python main.py maps/forest.json`).
 
 Hay una **segunda versión**, la **Aldea del vacío** (`python main_aldea.py` o
 `jugar_aldea.bat`; ver más abajo): otra dungeon con el **mismo código**, que
-empieza en la aldea y guarda su mazo aparte. Los cambios de gameplay (cartas,
-personajes, combate) valen para las dos.
+empieza en la aldea y guarda su mazo aparte. Y una **tercera**, la **Dimensión
+del vacío** (`python main_vacio.py` o `jugar_vacio.bat`): por ahora, una isla
+abierta flotando en el vacío con el Void Insect. Los cambios de gameplay (cartas,
+personajes, combate) valen para todas.
 
 > *"La historia te lleva por el mundo; la exploración te recompensa por desviarte."*
 
@@ -37,6 +39,7 @@ pip install -r requirements.txt
 ```bash
 python main.py                        # el hospital (o doble clic en jugar.bat)
 python main_aldea.py                  # la Aldea del vacío (o doble clic en jugar_aldea.bat)
+python main_vacio.py                  # la Dimensión del vacío (o doble clic en jugar_vacio.bat)
 python main.py maps/forest.json       # el Bosque de Arken
 python main.py ruta/a/mi_mapa.json    # jugar un mapa concreto (p. ej. del diseñador de niveles)
 python combate/main.py                # el duelo de cartas PvP original (2 jugadores, menú y editor de mazos)
@@ -54,13 +57,15 @@ nada instalado; se publican en las *releases* de GitHub):
 |---|---|---|---|
 | `dist/HospitalAbandonado.exe` | El hospital | `hospital_*.json` + `elevators.json` | `decks_hospital.json` |
 | `dist/AldeaDelVacio.exe` | La Aldea del vacío | `aldea.json` | `decks_aldea.json` |
+| `dist/DimensionDelVacio.exe` | La Dimensión del vacío | `vacio.json` | `decks_vacio.json` |
 
-Los dos llevan `assets/`; el bosque y el duelo PvP no entran. Para regenerarlos:
+Todos llevan `assets/`; el bosque y el duelo PvP no entran. Para regenerarlos:
 
 ```bash
 pip install pyinstaller
 python tools/build_exe.py            # HospitalAbandonado.exe
 python tools/build_exe.py --aldea    # AldeaDelVacio.exe
+python tools/build_exe.py --vacio    # DimensionDelVacio.exe
 ```
 
 Si junto al `.exe` existe una carpeta `maps/` o `assets/`, se usa esa en lugar
@@ -86,7 +91,7 @@ cd combate/tests && python -m unittest   # las pruebas de reglas del combate (te
 | Avanzar / cerrar diálogo    | E / Enter            | A / B            |
 | Menú de pausa (personaje y mazo) | TAB             | Start            |
 | Modo debug                  | F3                   | Back / Select    |
-| Salir                       | Esc                  | (n/a)            |
+| Salir (pregunta «¿Seguro que quieres salir?») | Esc | (n/a)            |
 
 **Menú de pausa (TAB)**: congela el mundo. `W`/`S` eligen fila, `A`/`D`
 cambian el valor y `TAB` / `ESC` vuelven al juego.
@@ -113,7 +118,7 @@ En combate (eres el jugador 1; el enemigo lo juega la IA y su mano va boca abajo
 | Definitiva (en rango S de Estilo) | `6` |
 | Confirmar / acelerar animación | `ENTER` |
 | Huir (si el enemigo lo permite) | `ESC` |
-| **Registro del combate** (pausa el combate) | `TAB` (se cierra con `TAB` o `ESC`; `W`/`S`, flechas o rueda para desplazar) |
+| **Registro del combate** (pausa el combate) | `TAB` (se cierra con `TAB` o `ESC`; `W`/`S`, flechas o rueda para desplazar; ratón sobre el nombre de una carta: la carta en grande y su descripción) |
 | Al terminar: CONTINUAR (volver al mapa) | `ENTER` |
 
 El **registro** muestra todo el combate turno a turno: qué jugó cada uno
@@ -136,7 +141,7 @@ eliges otro personaje en la pausa.
 | Personaje | Avatar |
 |---|---|
 | **Blaze** | Propio: chaqueta roja, bufanda naranja, pelo en punta como una llama y fuego en la mano |
-| **Hero** | El avatar por defecto (el aventurero de azul y bufanda roja), por ahora |
+| **Hero** | Sudadera blanca con capucha, pantalones vaqueros, el pelo castaño de Sandalphon (Granblue Fantasy), ojos azules y espada a la espalda |
 | **Jurgenoid** | Propio: caballero no muerto **de viento** inspirado en Vaseraga (*Granblue Fantasy*): orejas erune, pelo plateado, ojos que brillan, armadura pesada con hombreras, guadaña gigante y capa hecha jirones, en jade y blanco |
 
 Se define con `avatar=` en `Character` (`combate/game/characters.py`);
@@ -189,6 +194,8 @@ pero sin otro acceso. Para el salto, pon otra losa dentro para volver.
   regresan a su sitio. No se pierde nada.
 - **Huir** (`ESC`) o **empate**: vuelves al mapa donde estabas y el enemigo
   tarda 3 s en volver a atacar. Los jefes no dejan huir.
+- **Daño x2**: los enemigos de los que se puede huir reciben el doble de daño
+  (golpes, Mega Combo, BURN y POISON). Los que no dejan huir, daño normal.
 - Cada combate empieza de cero (100 HP, 3 de Mana), como en el duelo original.
 - **El escenario**: en el centro de la pantalla hay un suelo con los dos
   personajes encima (tu avatar a la izquierda; el enemigo, con su sprite del
@@ -259,7 +266,10 @@ mazos), pero no se pueden crear, duplicar, renombrar ni borrar mazos, y **no se
 pueden repetir cartas** en el mazo. Eso solo afecta a montar el mazo: en combate,
 cuando se acaba el mazo, los descartes se barajan y una carta puede volver a salir.
 Se guarda en `decks_hospital.json`, aparte de los mazos del duelo PvP
-(`combate/decks.json`), que siguen como siempre.
+(`combate/decks.json`), que siguen como siempre. **Al abrir el juego, el mazo vuelve
+al de por defecto** (`RESET_DECK_ON_START = True` en `game/settings.py`; con `False`
+se conserva el guardado). Si el mazo lleva cartas aún bloqueadas, en combate se
+juega sin ellas.
 
 Cartas **disponibles** (`AVAILABLE_CARDS`): las diez del mazo más Heavy Blow,
 Venom Strike y Heal. **Todas las demás están bloqueadas** (en gris, «BLOQUEADA», en el
@@ -302,6 +312,15 @@ Solo datos, en la lista `interactables` del mapa (o con el diseñador):
 - `aggression` (−1 defensiva … 1 agresiva) y `randomness` (0 = siempre su mejor jugada) ajustan la IA (`combate/game/ai.py`).
 - `sprite`: `wolf_grey`, `shroom`, `npc_droid`, `wolf_ghost`, o cualquier PNG de `assets/` (p. ej. `assets/goblin.png` → `"sprite": "goblin"`).
 
+## Dimensión del vacío (tercera versión)
+
+`python main_vacio.py`, `jugar_vacio.bat` o `DimensionDelVacio.exe`. Por ahora no
+hay nada más que el personaje, un **espacio abierto para caminar** (una isla de
+roca violeta flotando en el cielo del vacío, `"theme": "void"` en
+`render/ground.py`) y el **Void Insect** en el centro: se le reta directamente
+(sin barrera ni misión) y no deja huir. El mapa es `maps/vacio.json` (se edita a
+mano); la prueba, `tests/vacio_test.py`.
+
 ## Aldea del vacío (segunda versión)
 
 `python main_aldea.py`, `jugar_aldea.bat` o `AldeaDelVacio.exe`. Velmora es una
@@ -315,7 +334,7 @@ habitantes (no están muertos) y está abriendo un **portal en el cielo**. El ma
 | Fase | Qué hay que hacer | Cómo cambia el mapa |
 |---|---|---|
 | 1 · Los relojes | En la plaza hay **12 activadores del vacío**, uno por hora del reloj. En **3 casas** hay un **diario** con una hora: esas son las posiciones (14:00 = el 2, 9:00 = el 9, 0:00/12:00 = el 12). Hay que activar las tres, en cualquier orden; **una equivocada las apaga todas** | Barricadas en llamas cierran la granja, la herrería y el mercado; fuente seca en la plaza |
-| 2 · Las almas | Cada **herrero / granjero / vendedor** vencido da su **alma** (solo se lleva **una** a la vez; arriba a la izquierda se ve cuál). Hay que llevar **3 almas** de cada oficio a su **círculo del vacío**: herrero → herrería, granjero → granja, vendedor → mercado. **Un alma equivocada hace escapar todas las de ese círculo** | Se apagan las llamas; desaparecen los activadores; grietas del vacío en la plaza; aparecen los tres círculos |
+| 2 · Las almas | Cada **herrero / granjero / vendedor** vencido da su **alma** (solo se lleva **una** a la vez; arriba a la izquierda se ve cuál). Hay que llevar **1 alma** de cada oficio a su **círculo del vacío** (`SOULS_PER_CIRCLE` en `systems/village_quest.py`): herrero → herrería, granjero → granja, vendedor → mercado. **Un alma equivocada se escapa** (y con ella las que guardara el círculo). Con `SOULS_REQUIRED = False` los círculos no piden almas: basta con tocar cada uno. | Se apagan las llamas; desaparecen los activadores; grietas del vacío en la plaza; aparecen los tres círculos |
 | 3 · El portal | Con **Hero** se salta de roca en roca (habilidad Saltar) hasta el portal. El **Void Insect** está tras una **barrera**: para romperla hace falta la carta **Void Impact**, que se forja en el **yunque** de la herrería con **3 partes del insecto** (pata, ala y aguijón) escondidas en **casas al azar**. Rota la barrera, se lucha con él (sin huida) | Los círculos se vuelven cristales; aparecen las **rocas flotantes** y los puntos de salto; las partes aparecen en las casas |
 | 4 · Fin | — | El portal se cierra y se apagan los fuegos |
 
@@ -448,6 +467,7 @@ muros `"style": "cave"`, caminos `"style": "cave"` y detalle de suelo `puddles`.
 ```
 main.py                     punto de entrada (jugar.bat: doble clic)
 main_aldea.py               punto de entrada de la Aldea del vacío (jugar_aldea.bat)
+main_vacio.py               punto de entrada de la Dimensión del vacío (jugar_vacio.bat)
 game/
   game.py                   bucle principal; también es el "contexto" de interacción
   battle_scene.py           combate dentro de la exploración (usa combate/)
@@ -492,6 +512,7 @@ maps/
   hospital_*.json           el hospital abandonado (hospital_exterior: la caverna; el resto, generados)
   elevators.json            pisos del ascensor y la energía que pide cada uno
   aldea.json                la Aldea del vacío (generada)
+  vacio.json                la Dimensión del vacío (a mano)
 assets/                     PNG opcionales (ver assets/README.md)
 combate/                    el proyecto combate-cartas, como paquete (ver combate/README.md)
   game/ai.py                IA de los enemigos (nuevo)
@@ -502,11 +523,12 @@ tests/
   smoke_test.py             exploración
   hospital_test.py          el hospital entero
   aldea_test.py             la Aldea del vacío entera
+  vacio_test.py             la Dimensión del vacío
   pathing.py                buscador de caminos de las pruebas (¿se puede llegar de A a B?)
 tools/
   generar_hospital.py       genera los pisos del hospital
   generar_aldea.py          genera la Aldea del vacío
-  build_exe.py              genera dist/HospitalAbandonado.exe (o AldeaDelVacio.exe con --aldea)
+  build_exe.py              genera dist/HospitalAbandonado.exe (AldeaDelVacio.exe con --aldea, DimensionDelVacio.exe con --vacio)
   battle_test.py            exploración + combate
 ```
 

@@ -10,12 +10,15 @@ Además prueba los easter eggs (peluches, pollo y semillas, pozo), que siempre s
 puede llegar a ellos en todas las fases y que el sorteo cambia en cada partida.
 Los combates se dan por ganados (el combate se prueba en combate/tests/test_aldea.py).
 """
+import json
 import os
 import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from smoke_test import Bot  # noqa: E402  (configura SDL sin ventana)
+from smoke_test import Bot, key_event  # noqa: E402  (configura SDL sin ventana)
+
+import pygame  # noqa: E402
 
 from game import settings  # noqa: E402
 from pathing import go, reachable  # noqa: E402
@@ -170,21 +173,34 @@ def main():
     def villager(trade):
         return next(it for it in g.world.all_interactables if isinstance(it, Enemy) and it.soul == trade)
 
-    text = use(b, "circulo_herrero")
-    b.check("0/3" in text and quest.circle_count("herrero") == 0, "Sin alma, el círculo solo espera")
-    win_against(b, villager("herrero"))
-    b.check(quest.soul == "herrero", "Vencer a un herrero da su alma")
-    win_against(b, villager("granjero"))
-    b.check(quest.soul == "herrero", "Solo se lleva un alma a la vez")
-    use(b, "circulo_herrero")
-    b.check(quest.circle_count("herrero") == 1 and quest.soul is None, "Alma de herrero al círculo de la herrería: 1/3")
-    win_against(b, villager("vendedor"))
-    text = use(b, "circulo_herrero")
-    b.check(quest.circle_count("herrero") == 0 and "escapan" in text, "Un alma equivocada: escapan todas las del círculo")
-    for trade in Q.TRADES:
-        for _ in range(Q.SOULS_PER_CIRCLE):
-            win_against(b, villager(trade))
-            use(b, f"circulo_{trade}")
+    if not Q.SOULS_REQUIRED:        # momentáneo: los círculos no piden almas
+        text = use(b, "circulo_herrero")
+        b.check(quest.circle_done("herrero") and quest.soul is None and "destello" in text,
+                "Sin almas: tocar el círculo lo llena")
+        b.check(quest.phase == Q.SOULS, "Con un solo círculo encendido sigue la fase 2")
+        use(b, "circulo_granjero")
+        use(b, "circulo_vendedor")
+    else:
+        need = Q.SOULS_PER_CIRCLE
+        text = use(b, "circulo_herrero")
+        b.check(f"0/{need}" in text and quest.circle_count("herrero") == 0, "Sin alma, el círculo solo espera")
+        win_against(b, villager("herrero"))
+        b.check(quest.soul == "herrero", "Vencer a un herrero da su alma")
+        win_against(b, villager("granjero"))
+        b.check(quest.soul == "herrero", "Solo se lleva un alma a la vez")
+        text = use(b, "circulo_granjero")
+        b.check(quest.circle_count("granjero") == 0 and quest.soul is None and "escapa" in text,
+                "Un alma equivocada no sirve: escapa")
+        win_against(b, villager("herrero"))
+        text = use(b, "circulo_herrero")
+        b.check(quest.circle_count("herrero") == 1 and quest.circle_done("herrero") == (need == 1),
+                f"Alma de herrero al círculo de la herrería: 1/{need}")
+        if need == 1:
+            b.check("destello" in text and quest.phase == Q.SOULS, "Con un alma el círculo se activa (sigue la fase 2)")
+        for trade in Q.TRADES:
+            while not quest.circle_done(trade):
+                win_against(b, villager(trade))
+                use(b, f"circulo_{trade}")
     b.tick(3)
     b.check(quest.phase == Q.PORTAL and g.world.phase == Q.PORTAL, "Tres círculos llenos: fase 3 (el portal)")
     b.check(reachable(g.world, (1400, 600), (1400, 640)) and not reachable(g.world, (1400, 900), (1400, 640)),
@@ -238,6 +254,9 @@ def main():
     use(b, "yunque")
     b.check(Q.VOID_CARD not in g.locked_cards() and quest.parts_found(g.state.inventory) == 0,
             "El yunque forja Void Impact (y gasta las partes): ya se puede usar")
+    for it in parts:
+        it.update(0, g)
+    b.check(not any(it.visible for it in parts), "Las partes ya recogidas no vuelven a aparecer tras forjar")
 
     go(b, (1400, 830))
     for jid in ("salto_mercado", "salto_p1_p2", "salto_p2_p3"):
@@ -327,7 +346,63 @@ def main():
     b.check(len({tuple(s["hours"]) for s in setups}) > 10 and len({tuple(s["part_houses"]) for s in setups}) > 10
             and len({tuple(s["seed_barrels"]) for s in setups}) > 10,
             "Horas, casas, barriles y pozo cambian en cada partida")
+    saved_deck_with_locked_card(b)
+    deck_reset_on_start(b)
+    quit_confirmation(b)
     print(f"\nAldea OK ({b.ok} comprobaciones).")
+
+
+def saved_deck_with_locked_card(b):
+    """Partida nueva con un mazo guardado en otra partida que ya llevaba Void
+    Impact (aún bloqueada): se puede combatir con el mazo, sin esa carta."""
+    old = settings.DECKS_PATH, settings.RESET_DECK_ON_START
+    settings.DECKS_PATH = os.path.join(tempfile.mkdtemp(), "decks_aldea.json")
+    settings.RESET_DECK_ON_START = False        # se conserva el mazo guardado
+    with open(settings.DECKS_PATH, "w", encoding="utf-8") as f:
+        json.dump({"decks": {"aldea": ["attack", "guard", "break", "magic", Q.VOID_CARD]}}, f)
+    try:
+        g = Bot().g
+        b.check(Q.VOID_CARD in g.locked_cards() and g.pause.deck == "aldea",
+                "Mazo guardado con Void Impact bloqueada: sigue elegido")
+        enemy = next(it for it in g.world.all_interactables if isinstance(it, Enemy))
+        g._open_battle(enemy)
+        ids = [c.id for c in g.battle.engine.players[0].deck.draw_pile + g.battle.engine.players[0].hand]
+        b.check(ids and Q.VOID_CARD not in ids, "En combate se juega sin la carta bloqueada")
+    finally:
+        settings.DECKS_PATH, settings.RESET_DECK_ON_START = old
+
+
+def deck_reset_on_start(b):
+    """Al abrir el juego, el mazo vuelve a ser el de por defecto."""
+    old = settings.DECKS_PATH
+    settings.DECKS_PATH = os.path.join(tempfile.mkdtemp(), "decks_aldea.json")
+    with open(settings.DECKS_PATH, "w", encoding="utf-8") as f:
+        json.dump({"decks": {"aldea": ["attack", "guard", "break", "magic", Q.VOID_CARD]}}, f)
+    try:
+        g = Bot().g
+        b.check(g.store.get("aldea") == settings.HOSPITAL_DECK and not g.store.is_modified("aldea"),
+                "Al reiniciar el juego, el mazo vuelve al de por defecto")
+    finally:
+        settings.DECKS_PATH = old
+
+
+def quit_confirmation(b):
+    """ESC pregunta «¿Seguro que quieres salir?»: No sigue jugando, Sí cierra."""
+    bot = Bot()
+    g = bot.g
+    bot.tick(60)
+    bot.tick(1, [key_event(pygame.K_ESCAPE)])
+    b.check(g.running and g.choice.is_open and "salir" in g.choice.title,
+            "ESC pregunta «¿Seguro que quieres salir?»")
+    bot.tick(1, [key_event(pygame.K_RETURN)])
+    b.check(g.running and not g.choice.is_open, "«No» (la opción por defecto) sigue jugando")
+    bot.tick(1, [key_event(pygame.K_ESCAPE)])
+    bot.tick(1, [key_event(pygame.K_ESCAPE)])
+    b.check(g.running and not g.choice.is_open, "ESC otra vez cancela la pregunta")
+    bot.tick(1, [key_event(pygame.K_ESCAPE)])
+    bot.tick(1, [key_event(pygame.K_s)])
+    bot.tick(1, [key_event(pygame.K_RETURN)])
+    b.check(not g.running, "«Sí» cierra el juego")
 
 
 if __name__ == "__main__":

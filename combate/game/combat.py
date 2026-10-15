@@ -703,8 +703,21 @@ class CombatEngine:
         """La pasiva de quien RECIBE el daño (p. ej. Elemental Wolf: su elemento le
         cura, el contrario le hace x1.5). Una vez por evento, tras la del atacante."""
         target = self.players[event.target]
-        if target.passive is None:
+        if target.passive is not None:
+            self._target_passive(r, event, target)
+        self._apply_vulnerability(r, event, target)
+
+    def _apply_vulnerability(self, r, event, target):
+        """Player.damage_taken_mult: el objetivo recibe el daño multiplicado
+        (en la exploración, los enemigos de los que se puede huir reciben x2)."""
+        mult = target.damage_taken_mult
+        if mult == 1 or event.heal or not event.amount:
             return
+        before = event.amount
+        event.amount = int(before * mult + 0.5)
+        r.consequences.append(f"{target.name}: DAÑO x{mult:g} ({before} -> {event.amount})")
+
+    def _target_passive(self, r, event, target):
         target.passive.incoming_damage(event, self, r)
         if event.weak_base is not None and event.weak_base != event.amount:
             if event.amount < event.weak_base:      # resistencia (lobos de fuego / hielo)
@@ -933,6 +946,7 @@ class CombatEngine:
     # --- API que usan las definiciones de game/status.py --------------------------
     def status_damage(self, player, amount, status):
         """Daño periódico (BURN, POISON): no es un HIT, no toca el combo ni la Stability."""
+        amount = int(amount * player.damage_taken_mult + 0.5)
         player.hp = max(0, player.hp - amount)
         self._status_note(player.index, f"{status.id.value}: -{amount} HP")
         self.emit("hp", player.index, amount=-amount, damage_type=status.id.value.lower())

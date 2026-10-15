@@ -115,7 +115,7 @@ class VillageItem(Interactable):
         if self.kind == "plush":
             return quest.has_plush(self.house)
         part = quest.part_in_house(self.house)
-        return part is not None and quest.phase >= Q.PORTAL and not ctx.state.inventory.has(part[0])
+        return part is not None and quest.phase >= Q.PORTAL and not quest.part_taken(part[0])
 
     def update(self, dt, ctx):
         self.visible = self.present(ctx)
@@ -137,6 +137,9 @@ class VillageItem(Interactable):
             ctx.show_dialogue(pages)
         else:
             pid, pname = quest.part_in_house(self.house)
+            if quest.part_taken(pid):
+                return
+            quest.take_part(pid)
             ctx.state.inventory.add(pid)
             found = quest.parts_found(ctx.state.inventory)
             pages = [f"Has encontrado {pname}. Todavía se mueve un poco. ({found}/3)"]
@@ -150,7 +153,7 @@ class VillageItem(Interactable):
 
 
 class VoidCircle(Interactable):
-    prompt_verb = "Ofrecer alma"
+    prompt_verb = "Ofrecer alma" if Q.SOULS_REQUIRED else "Activar"
 
     def __init__(self, x, y, obj_id, trade):
         super().__init__(x, y, obj_id, f"Círculo del vacío ({Q.TRADE_NAMES[trade]})", "void_circle_0",
@@ -160,8 +163,9 @@ class VoidCircle(Interactable):
 
     def update(self, dt, ctx):
         self._t += dt
-        n = min(Q.SOULS_PER_CIRCLE, ctx.village.circle_count(self.trade))
-        self.sprite_key = f"void_circle_{n}"
+        # El dibujo tiene 4 estados (0-3 almas): se escala a las que pida el círculo
+        count = min(Q.SOULS_PER_CIRCLE, ctx.village.circle_count(self.trade))
+        self.sprite_key = f"void_circle_{3 * count // Q.SOULS_PER_CIRCLE}"
         self.sprite_offset = (0, 0)
 
     @property
@@ -172,22 +176,27 @@ class VoidCircle(Interactable):
         quest = ctx.village
         trade = Q.TRADE_NAMES[self.trade]
         result = quest.offer_soul(self.trade)
-        count = quest.circle_count(self.trade)
+        count, need = quest.circle_count(self.trade), Q.SOULS_PER_CIRCLE
+        sinks = (f"El alma se hunde en el círculo. ({count}/{need})" if Q.SOULS_REQUIRED
+                 else "Las runas se encienden en cuanto lo pisas.")
         if result == "empty":
-            ctx.show_dialogue([f"Un círculo de runas moradas grabado a fuego en el suelo. ({count}/3)",
-                               f"Parece que espera algo... las almas de los {trade}s de la aldea."])
+            wants = (f"el alma de un {trade} de la aldea." if need == 1
+                     else f"las almas de los {trade}s de la aldea.")
+            ctx.show_dialogue([f"Un círculo de runas moradas grabado a fuego en el suelo. ({count}/{need})",
+                               f"Parece que espera algo... {wants}"])
         elif result == "complete":
-            ctx.show_dialogue(["El círculo está lleno. Las tres almas giran dentro, en silencio."])
+            ctx.show_dialogue(["El círculo está lleno. " + ("El alma gira dentro, en silencio." if need == 1
+                                                             else "Las almas giran dentro, en silencio.")])
         elif result == "wrong":
             ctx.show_dialogue(["El alma no es de este oficio. El círculo se agita...",
-                               "¡Todas las almas que guardaba escapan chillando hacia el cielo! (0/3)"])
+                               f"¡El alma escapa chillando hacia el cielo, y con ella las que guardaba! (0/{need})"])
         elif result == "ok":
-            ctx.show_dialogue([f"El alma se hunde en el círculo. ({count}/3)"])
+            ctx.show_dialogue([f"El alma se hunde en el círculo. ({count}/{need})"])
         elif result == "filled":
-            ctx.show_dialogue([f"El alma se hunde en el círculo. ({count}/3)",
+            ctx.show_dialogue([sinks,
                                f"El círculo de {Q.CIRCLE_PLACES[self.trade]} se cierra con un destello."])
         else:   # "all"
-            ctx.show_dialogue([f"El alma se hunde en el círculo. ({count}/3)",
+            ctx.show_dialogue([sinks,
                                "Los tres círculos se encienden a la vez. Un rayo morado sube hasta el portal...",
                                "Sobre el mercado aparecen rocas flotando en el aire, una tras otra, como "
                                "escalones hacia el cielo."])

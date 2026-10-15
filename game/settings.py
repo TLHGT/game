@@ -70,6 +70,9 @@ PLAYER_DECK = "hospital"
 HOSPITAL_DECK = ["attack", "guard", "break", "magic", "perfect_guard", "recover", "taunt",
                  "stun_guard", "revenge", "overdrive"]
 DECKS_PATH = os.path.join(_EXE_DIR, "decks_hospital.json")
+# True: al abrir el juego el mazo vuelve al de por defecto (los cambios del editor
+# solo duran esa partida). False: se conserva el mazo guardado.
+RESET_DECK_ON_START = True
 # Cartas disponibles desde el principio. Todas las demás empiezan BLOQUEADAS; algunas
 # se consiguen en cofres del hospital (Ice Shard en el piso 1, Fire Bolt en el piso 2)
 # o en la aldea (Void Impact, forjada en el yunque).
@@ -99,3 +102,14 @@ def use_village():
     TITLE = "Aldea del vacío - Exploración y combate de cartas"
     PLAYER_DECK = "aldea"
     DECKS_PATH = os.path.join(_EXE_DIR, "decks_aldea.json")
+
+
+def use_void():
+    """Versión «Dimensión del vacío» (main_vacio.py, DimensionDelVacio.exe): una
+    isla flotante en el vacío con el Void Insect (maps/vacio.json). Guarda su
+    mazo aparte (decks_vacio.json). El código es el mismo."""
+    global START_MAP, TITLE, PLAYER_DECK, DECKS_PATH
+    START_MAP = "vacio"
+    TITLE = "Dimensión del vacío - Exploración y combate de cartas"
+    PLAYER_DECK = "vacio"
+    DECKS_PATH = os.path.join(_EXE_DIR, "decks_vacio.json")
