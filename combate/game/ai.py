@@ -193,6 +193,14 @@ class CardAI:
                 useful = main not in (None, PASS) and self.rng.random() < 0.6
             elif "SET_AFFINITY" in effects:
                 useful = self._wants_affinity(me, card)
+            elif "HEAL" in effects:              # Harvest / Heal: solo si le falta vida
+                amount = next(e.get("amount", 0) for e in card.effects if e["type"] == "HEAL")
+                useful = me.max_hp - me.hp >= amount
+            elif effects & {"REDUCE_MANA", "REDUCE_MAX_MANA"}:   # Haggle, Void Buzz
+                foe = engine.players[1 - i]
+                conditional = any(e.get("if_hit") for e in card.effects)
+                useful = (foe.mana > 0 or "REDUCE_MAX_MANA" in effects) and self.rng.random() < 0.6 \
+                    and (not conditional or main not in (None, PASS))
             elif "GAIN_STYLE" in effects:
                 spare = me.mana - engine.total_cost(i, main, card)
                 useful = spare >= 1 and self.rng.random() < 0.5

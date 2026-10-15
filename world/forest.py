@@ -6,6 +6,7 @@ bosque siempre). La colisión del bosque la da la rejilla, no cada árbol.
 
 style "cave": en vez de árboles, estalagmitas y rocas de cueva
 (`pine_ratio` pasa a ser la proporción de estalagmitas).
+style "burnt": árboles muertos y quemados (aldea del vacío).
 """
 import random
 
@@ -32,6 +33,8 @@ def generate_forest(width, height, walkable, exclusions, spacing, seed=0, pine_r
             if probe.collidelist(blocked) == -1:
                 if style == "cave":
                     kind = "stalagmite" if rng.random() < pine_ratio else "cave_rock"
+                elif style == "burnt":
+                    kind = "dead_tree"
                 else:
                     kind = "pine" if rng.random() < pine_ratio else "tree"
                 tree = Prop(kind, round(tx), round(ty), rng.randrange(4))

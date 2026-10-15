@@ -69,6 +69,7 @@ class BattleScene(App):
         self.view = View(self.engine.rules)
         self.view.ai_players = {ENEMY}
         self.view.exit_label = "CONTINUAR"
+        self.view.fighter_keys[ENEMY] = self.enemy.sprite_key     # el mismo aspecto que en el mapa
         if self.enemy.hp:
             foe = self.engine.players[ENEMY]
             foe.hp = foe.max_hp = max(1, min(RULES.MAX_HP, self.enemy.hp))

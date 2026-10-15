@@ -168,6 +168,33 @@ def _gain_style(data, ctx):
     ctx.engine.gain_style(ctx.owner.index, data.get("amount", 10))
 
 
+@effect("HEAL")
+def _heal(data, ctx):
+    """{"amount": 30}: quien juega la carta recupera HP (hasta su vida máxima). Heal, Harvest."""
+    ctx.engine.card_heal(ctx.owner.index, data.get("amount", 0))
+
+
+@effect("SELF_DAMAGE")
+def _self_damage(data, ctx):
+    """{"amount": 15}: quien juega la carta pierde HP. No es un HIT ni daño de
+    interacción (no pasa por las pasivas). Void Impact."""
+    ctx.engine.self_damage(ctx.owner.index, data.get("amount", 0), ctx.card.name)
+
+
+@effect("SELF_UNSTABLE")
+def _self_unstable(data, ctx):
+    """Quien juega la carta queda UNSTABLE (se aplica en el paso de Stability,
+    antes de las recuperaciones: si la carta gana y recupera Stability, vuelve a STABLE)."""
+    ctx.flags["self_instability"] = True
+
+
+@effect("REDUCE_MAX_MANA")
+def _reduce_max_mana(data, ctx):
+    """{"amount": 1}: el Mana MÁXIMO del rival baja (todo el combate; nunca de 1).
+    Como APPLY_STATUS, se aplica tras el daño y admite if_outcome / if_hit."""
+    ctx.flags["reduce_max_mana"] = ctx.flags.get("reduce_max_mana", []) + [dict(data)]
+
+
 @effect("SET_AFFINITY")
 def _set_affinity(data, ctx):
     """{"element": "FIRE" | "ICE"}: cambia la afinidad elemental de la pasiva

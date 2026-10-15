@@ -32,6 +32,11 @@ SPRITE_HITBOX = {
     "wolf_fire": (40, 14),
     "wolf_ice": (40, 14),
     "generator_off": (34, 14),
+    # Aldea del vacío
+    "villager_herrero": (26, 12),
+    "villager_granjero": (26, 12),
+    "villager_vendedor": (26, 12),
+    "void_insect": (64, 22),
 }
 
 

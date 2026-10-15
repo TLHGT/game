@@ -13,10 +13,28 @@
     └── secrets        definiciones de secretos de esta zona
 
 El mapa solo contiene *datos y lógica*; cómo se dibuja lo decide el renderer.
+
+FASES (mapas que cambian con una misión, p. ej. la aldea del vacío): si el JSON
+declara "phase_flag", la fase actual es ctx.state.get_flag(phase_flag, 1) y
+cualquier zona caminable, muro, obstáculo, decoración, interactuable, trigger o
+área del suelo puede llevar "phases": [1, 2] para existir solo en esas fases.
+Las listas normales (walkable, walls, interactables...) tienen solo lo de la
+fase actual; las all_* lo tienen todo (el estado de los objetos se guarda de
+all_interactables). apply_phase() reconstruye colisión e índice.
 """
 from collections import defaultdict
 
+import pygame
+
+from game import settings
+from world.collision import CollisionGrid
+
 CHUNK = 256
+
+
+def in_phase(obj_phases, phase):
+    """¿Existe en `phase` algo con fases `obj_phases` (None = siempre)?"""
+    return obj_phases is None or phase is None or phase in obj_phases
 
 
 class GameMap:
@@ -39,6 +57,40 @@ class GameMap:
         self.ground = {}           # datos visuales del suelo (los interpreta el renderer)
         self.collision = None      # CollisionGrid
         self._chunks = defaultdict(list)
+        # Fases (ver arriba). Sin "phase_flag" todo existe siempre.
+        self.phase_flag = None
+        self.phase = None
+        self.all_walkable = []     # [(Rect, phases)]
+        self.all_walls = []
+        self.all_obstacles = []
+        self.all_decorations = []
+        self.all_interactables = []
+        self.all_triggers = []
+
+    # --- Fases --------------------------------------------------------------
+    def current_phase(self, state):
+        return state.get_flag(self.phase_flag, 1) if self.phase_flag else None
+
+    def apply_phase(self, phase, force=False):
+        """Deja activas solo las cosas de `phase`. Devuelve True si algo cambió."""
+        if phase == self.phase and self.collision is not None and not force:
+            return False
+        self.phase = phase
+
+        def keep(items):
+            return [e for e in items if in_phase(getattr(e, "phases", None), phase)]
+        self.walkable = [r for r, ph in self.all_walkable if in_phase(ph, phase)]
+        self.collision = CollisionGrid(self.width, self.height, settings.COLLISION_CELL, self.walkable)
+        self.walls = keep(self.all_walls)
+        self.obstacles = keep(self.all_obstacles)
+        self.decorations = keep(self.all_decorations)
+        self.interactables = keep(self.all_interactables)
+        self.triggers = keep(self.all_triggers)
+        self.build_index()
+        return True
+
+    def all_walkable_rects(self):
+        return [r for r, _ in self.all_walkable]
 
     # --- Construcción -----------------------------------------------------
     def build_index(self):
@@ -88,7 +140,7 @@ class GameMap:
         yield from self.interactables
 
     def get_interactable(self, obj_id):
-        for it in self.interactables:
+        for it in self.all_interactables:
             if it.id == obj_id:
                 return it
         return None
@@ -98,12 +150,14 @@ class GameMap:
 
     # --- Eventos ------------------------------------------------------------
     def on_secret_unlocked(self, secret_id, ctx):
-        """Los secretos modifican el mapa: avisa a quien dependa de él."""
-        for e in self.interactables + self.walls:
+        """Los secretos modifican el mapa: avisa a quien dependa de él (en cualquier fase)."""
+        for e in self.all_interactables + self.all_walls:
             if getattr(e, "secret_id", None) == secret_id:
                 e.on_secret_unlocked(ctx)
 
     def update(self, dt, ctx):
+        if self.phase_flag and self.apply_phase(self.current_phase(ctx.state)):
+            ctx.on_phase_changed(self)
         for it in self.interactables:
             it.update(dt, ctx)
         player_rect = ctx.player.rect

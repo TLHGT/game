@@ -1,8 +1,10 @@
 """Pantalla de combate: dibuja el estado del motor y devuelve zonas clicables.
 
 No toma decisiones de juego: solo lee `engine` y el estado visual `view`.
+En el centro, un escenario: un suelo con los personajes animados encima
+(ui/fighters.py) y, a cada lado, la carta que ha jugado cada uno.
 Tras cada interacción muestra dos bloques:
-    POR QUÉ ganó   (dentro de la zona de batalla)   GUARD > ATTACK · PLAYER 2 WINS
+    POR QUÉ ganó   (bajo el suelo)                  GUARD > ATTACK · PLAYER 2 WINS
     QUÉ PASÓ       (píldoras bajo la zona)           sin hit · -> UNSTABLE · SIGUE / FIN DEL TURNO
 """
 import math
@@ -16,16 +18,19 @@ from combate.game.status import BREAK_ICE, LOCK_FREEZE, LOCK_PASS
 from combate.ui import theme as T
 from combate.ui.card_widget import CHIP_COLORS, draw_card, draw_card_back, draw_cost_tag, draw_empty_slot
 from combate.ui.player_hud import HUD_W, draw_hud, hud_anchor
+from combate.ui.fighters import draw_fighters, draw_stage
 from combate.ui.character_widget import draw_character_chip, draw_character_panel
 from combate.ui.style_widget import draw_style_row, draw_ultimate_picker
 from combate.ui.status_widget import draw_freeze_actions, draw_status_badge, draw_status_icon, draw_status_panel
 
 CARD_W, CARD_H = 112, 150
 HAND_Y = 512
-BIG_W, BIG_H = 132, 176
+BIG_W, BIG_H = 80, 107             # carta jugada, a un lado de cada personaje
 BATTLE = pygame.Rect(340, 136, 600, 300)
-SLOTS = [pygame.Rect(BATTLE.centerx - 40 - BIG_W, BATTLE.y + 14, BIG_W, BIG_H),
-         pygame.Rect(BATTLE.centerx + 40, BATTLE.y + 14, BIG_W, BIG_H)]
+SLOTS = [pygame.Rect(BATTLE.x + 12, BATTLE.y + 16, BIG_W, BIG_H),
+         pygame.Rect(BATTLE.right - 12 - BIG_W, BATTLE.y + 16, BIG_W, BIG_H)]
+SPECIAL_W, SPECIAL_H = 54, 72
+RESULT_Y = 346                      # POR QUÉ ganó: bajo el suelo
 
 KEY_LABELS = [["1", "2", "3", "4", "5"], ["Q", "W", "E", "R", "T"]]
 PASS_KEY = ["SPACE", "TAB"]
@@ -71,6 +76,7 @@ class View:
         self.menu_available = False     # botón MENÚ al terminar (solo si la app tiene menú)
         self.ai_players = set()         # jugadores que controla la IA: mano oculta, sin botones
         self.exit_label = None          # si se fija, al terminar solo hay un botón (p. ej. CONTINUAR)
+        self.fighter_keys = [None, None]    # sprite de cada luchador (None = avatar del personaje)
 
 
 def _button(surface, rect, label, key, color, buttons, action, enabled=True, hover=None):
@@ -131,8 +137,8 @@ def draw_battle(surface, engine, view):
                T.PLAYER_COLORS[holder], (cx, 118), "midtop")
 
     # --- Zona de batalla --------------------------------------------------------
-    T.panel(surface, BATTLE, color=(22, 26, 38), border=(64, 70, 96))
-    T.text(surface, "VS", 34, (90, 96, 120), (BATTLE.centerx, SLOTS[0].centery), "center")
+    draw_stage(surface, BATTLE, view.time)
+    draw_fighters(surface, engine, view)
     _draw_slots(surface, engine, view)
     _draw_result(surface, engine)
     _draw_consequences(surface, engine, view)
@@ -241,7 +247,6 @@ def _draw_slots(surface, engine, view):
     r = engine.result
     for i, slot in enumerate(SLOTS):
         color = T.PLAYER_COLORS[i]
-        T.text(surface, engine.players[i].name, 15, color, (slot.centerx, slot.bottom + 4), "midtop")
         if r is not None and phase in RESULT_PHASES:
             card = r.cards[i]
             t = min(1.0, view.phase_time / 0.45) if phase == Phase.CARD_REVEAL else 1.0
@@ -263,14 +268,14 @@ def _draw_slots(surface, engine, view):
                 draw_card(surface, card, rect, big=True, glow=color if won else None, dim=lost)
             special = r.specials[i] if r.specials else None
             if special is not None:
-                mini = pygame.Rect(0, 0, 84, 112)
-                mini.centery = slot.centery
+                mini = pygame.Rect(0, 0, SPECIAL_W, SPECIAL_H)
+                mini.bottom = slot.bottom
                 if i == 0:
-                    mini.right = slot.left - 8
+                    mini.left = slot.right + 4
                 else:
-                    mini.left = slot.right + 8
+                    mini.right = slot.left - 4
                 draw_card(surface, special, mini)
-                T.text(surface, "+ SPECIAL", 12, T.PROPERTY_COLORS["SPECIAL"], (mini.centerx, mini.bottom + 3), "midtop")
+                T.text(surface, "+ SPECIAL", 11, T.PROPERTY_COLORS["SPECIAL"], (mini.centerx, mini.y - 2), "midbottom")
         elif phase == Phase.CARD_SELECTION:
             if engine.confirmed[i]:
                 draw_card_back(surface, slot, color, ready=True)
@@ -286,7 +291,7 @@ def _pass_placard(surface, rect, dim=False):
     pygame.draw.rect(surface, (30, 34, 46), rect, border_radius=12)
     pygame.draw.rect(surface, (120, 126, 146), rect, 3, border_radius=12)
     if rect.w > 40:
-        T.text(surface, "PASS", 32, (190, 194, 210), rect.center, "center")
+        T.text(surface, "PASS", 22, (190, 194, 210), rect.center, "center")
     if dim:
         veil = pygame.Surface(rect.size, pygame.SRCALPHA)
         veil.fill((8, 10, 16, 140))
@@ -298,10 +303,10 @@ def _ice_placard(surface, rect, action):
     pygame.draw.rect(surface, (24, 40, 56), rect, border_radius=12)
     pygame.draw.rect(surface, T.ICE_COLOR, rect, 3, border_radius=12)
     if rect.w > 40:
-        draw_status_icon(surface, "FREEZE", (rect.centerx, rect.y + 44), 18)
-        T.text(surface, "ICE CUBE", 18, T.ICE_COLOR, (rect.centerx, rect.y + 80), "center")
-        T.text(surface, "BREAK ICE" if action == BREAK_ICE else "WAIT", 22, T.TEXT,
-               (rect.centerx, rect.y + 116), "center")
+        draw_status_icon(surface, "FREEZE", (rect.centerx, rect.y + rect.h * 0.27), 12)
+        T.text(surface, "ICE CUBE", 12, T.ICE_COLOR, (rect.centerx, rect.y + rect.h * 0.52), "center")
+        T.text(surface, "BREAK ICE" if action == BREAK_ICE else "WAIT", 13, T.TEXT,
+               (rect.centerx, rect.y + rect.h * 0.75), "center")
 
 
 def _draw_result(surface, engine):
@@ -309,7 +314,7 @@ def _draw_result(surface, engine):
     r = engine.result
     if r is None or engine.phase not in RESULT_PHASES or engine.phase == Phase.CARD_REVEAL:
         return
-    y = SLOTS[0].bottom + 24
+    y = RESULT_Y
     lines = r.lines[:4]
     for k, line in enumerate(lines):
         if "WINS" in line and r.winner is not None:
@@ -318,9 +323,9 @@ def _draw_result(surface, engine):
             color = T.GOLD
         else:
             color = T.TEXT if k == 0 else (200, 204, 218)
-        size = 20 if k == 0 or "WINS" in line or line == "DRAW" else 15
+        size = 18 if k == 0 or "WINS" in line or line == "DRAW" else 14
         T.text(surface, line, size, color, (BATTLE.centerx, y), "midtop", shadow=k == len(lines) - 1)
-        y += size + 3
+        y += size + 2
 
 
 def _consequence_color(text):

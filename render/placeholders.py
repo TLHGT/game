@@ -10,6 +10,8 @@ import random
 
 import pygame
 
+from render import village_sprites
+
 OUTLINE = (28, 30, 34)
 
 
@@ -1031,6 +1033,9 @@ def jump_spot():
 
 
 def make_block(key, w, depth, height):
+    village = village_sprites.make_block(key, w, depth, height)    # aldea del vacío
+    if village is not None:
+        return village
     total = depth + height
     s = _surf(w, total)
     if key == "leafwall":
@@ -1193,4 +1198,7 @@ def make(key):
               "jump_spot": jump_spot, "glowshroom": glowshroom}
     if key in simple:
         return simple[key]()
+    village = village_sprites.make(key)            # aldea del vacío
+    if village is not None:
+        return village
     return missing(key)

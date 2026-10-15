@@ -157,6 +157,18 @@ CARD_DATA = [
     card(id="taunt", name="Taunt", short="TNT", card_type="SPECIAL", category=CATEGORY_SPECIAL,
          description="Provocas al rival: +10 puntos de Estilo. Nada más.",
          effects=[{"type": "GAIN_STYLE", "when": "special", "amount": 10}]),
+    # --- Aldea del vacío ----------------------------------------------------------------
+    card(id="heal", name="Heal", short="HEL", card_type="SPECIAL", category=CATEGORY_SPECIAL,
+         description="Recuperas 30 de vida.",
+         effects=[{"type": "HEAL", "when": "special", "amount": 30}]),
+    # Se forja en el yunque de la herrería con tres partes del insecto del vacío.
+    card(id="void_impact", name="Void Impact", short="VIM", card_type="ATTACK", category=CATEGORY_SPECIAL,
+         damage=10, element="VOID", recovers_stability=True,
+         description="Al jugarla pierdes 15 HP y quedas UNSTABLE. Si gana: PARALYZE al rival "
+                     "y recuperas Stability.",
+         effects=[{"type": "SELF_DAMAGE", "when": "play", "amount": 15},
+                  {"type": "SELF_UNSTABLE", "when": "play"},
+                  {"type": "APPLY_STATUS", "when": "win", "status": "PARALYZE"}]),
 ]
 
 # Cartas EXCLUSIVAS de enemigos: el motor las usa como cualquier otra, pero no
@@ -179,6 +191,69 @@ ENEMY_CARD_DATA = [
          damage=10, element="ICE", exclusive_to="elemental_wolf",
          description="ATTACK de HIELO. Al jugarla pasa a MODO HIELO.",
          effects=[{"type": "SET_AFFINITY", "when": "play", "element": "ICE"}]),
+
+    # --- Aldea del vacío: aldeanos huecos ----------------------------------------------
+    # Herrero: golpes de martillo, chispas de la forja y acero templado
+    card(id="hammer_blow", name="Hammer Blow", short="HMR", card_type="BREAK", category=CATEGORY_SPECIAL,
+         damage=10, exclusive_to="herrero",
+         description="Martillazo. Si gana: +5 de daño (15 en total).",
+         effects=[{"type": "MODIFY_DAMAGE", "when": "win", "amount": 5}]),
+    card(id="forge_spark", name="Forge Spark", short="FSP", card_type="ATTACK", category=CATEGORY_SPECIAL,
+         damage=10, element="FIRE", exclusive_to="herrero",
+         description="Chispas de la forja (FUEGO). Si gana: BURN al rival.",
+         effects=[{"type": "APPLY_STATUS", "when": "win", "status": "BURN"}]),
+    card(id="tempered_steel", name="Tempered Steel", short="TMP", card_type="GUARD", category=CATEGORY_SPECIAL,
+         causes_instability=True, exclusive_to="herrero",
+         description="Acero templado. Si gana, desestabiliza; si pierde, no pierde Stability.",
+         effects=[{"type": "PROTECT_STABILITY", "when": "lose"}]),
+    # Granjero: horca, guadaña, cosecha y verdura podrida
+    card(id="pitchfork", name="Pitchfork", short="PFK", card_type="ATTACK", category=CATEGORY_SPECIAL,
+         damage=10, priority=1, exclusive_to="granjero",
+         description="Horcazo. Prioridad 1: gana los empates entre ATTACK."),
+    card(id="scythe_sweep", name="Scythe Sweep", short="SCY", card_type="BREAK", category=CATEGORY_SPECIAL,
+         damage=10, exclusive_to="granjero",
+         description="Barrido de guadaña. Si vence a GUARD: +1 hit extra.",
+         effects=[{"type": "ADD_HIT", "when": "win", "vs": "GUARD", "amount": 1}]),
+    card(id="rotten_crop", name="Rotten Crop", short="RTN", card_type="MAGIC", category=CATEGORY_SPECIAL,
+         damage=10, exclusive_to="granjero",
+         description="Lanza la cosecha podrida. Si gana: POISON al rival.",
+         effects=[{"type": "APPLY_STATUS", "when": "win", "status": "POISON"}]),
+    card(id="harvest", name="Harvest", short="HRV", card_type="SPECIAL", category=CATEGORY_SPECIAL,
+         exclusive_to="granjero",
+         description="Cosecha: recupera 10 de vida.",
+         effects=[{"type": "HEAL", "when": "special", "amount": 10}]),
+    # Vendedor: monedas, regateo y sobornos
+    card(id="coin_toss", name="Coin Toss", short="COI", card_type="MAGIC", category=CATEGORY_SPECIAL,
+         damage=10, exclusive_to="vendedor",
+         description="Lluvia de monedas. Si gana: +1 Mana.",
+         effects=[{"type": "GAIN_MANA", "when": "win", "amount": 1}]),
+    card(id="haggle", name="Haggle", short="HGL", card_type="SPECIAL", category=CATEGORY_SPECIAL,
+         exclusive_to="vendedor",
+         description="Regateo: al revelar, el rival pierde 1 Mana.",
+         effects=[{"type": "REDUCE_MANA", "when": "special", "amount": 1}]),
+    card(id="bribe", name="Bribe", short="BRB", card_type="GUARD", category=CATEGORY_SPECIAL,
+         exclusive_to="vendedor",
+         description="Soborno. Si gana: el rival pierde 1 Mana.",
+         effects=[{"type": "REDUCE_MANA", "when": "win", "amount": 1}]),
+
+    # --- Aldea del vacío: Void Insect (jefe) --------------------------------------------
+    card(id="void_sting", name="Void Sting", short="VST", card_type="ATTACK", category=CATEGORY_SPECIAL,
+         damage=10, element="VOID", exclusive_to="void_insect",
+         description="Aguijón del vacío. Si gana: el rival pierde 1 de Mana máximo.",
+         effects=[{"type": "REDUCE_MAX_MANA", "when": "win", "amount": 1}]),
+    card(id="mana_leech", name="Mana Leech", short="MLC", card_type="MAGIC", category=CATEGORY_SPECIAL,
+         damage=10, element="VOID", exclusive_to="void_insect",
+         description="Sorbe el Mana. Si gana: el rival pierde 1 Mana y el insecto gana 1.",
+         effects=[{"type": "REDUCE_MANA", "when": "win", "amount": 1},
+                  {"type": "GAIN_MANA", "when": "win", "amount": 1}]),
+    card(id="chitin_shell", name="Chitin Shell", short="CHT", card_type="GUARD", category=CATEGORY_SPECIAL,
+         causes_instability=True, exclusive_to="void_insect",
+         description="Caparazón. Si gana, desestabiliza; si pierde, no pierde Stability.",
+         effects=[{"type": "PROTECT_STABILITY", "when": "lose"}]),
+    card(id="void_buzz", name="Void Buzz", short="VBZ", card_type="SPECIAL", category=CATEGORY_SPECIAL,
+         exclusive_to="void_insect",
+         description="Zumbido del vacío: si su acción principal hace HIT, el rival pierde 1 de Mana máximo.",
+         effects=[{"type": "REDUCE_MAX_MANA", "when": "special", "amount": 1, "if_hit": True}]),
 ]
 
 CARDS = {d["id"]: d for d in CARD_DATA + ENEMY_CARD_DATA}
@@ -217,6 +292,15 @@ ENEMY_DECKS = {
                   "guard", "perfect_guard", "recover"],
     "ice_wolf": ["attack", "attack", "ice_shard", "ice_shard", "frost_guard", "break", "break",
                  "guard", "perfect_guard", "recover"],
+    # Aldea del vacío
+    "herrero": ["hammer_blow", "hammer_blow", "forge_spark", "forge_spark", "tempered_steel",
+                "tempered_steel", "break_guard", "iron_stance", "attack", "guard"],
+    "granjero": ["pitchfork", "pitchfork", "scythe_sweep", "scythe_sweep", "rotten_crop", "harvest",
+                 "harvest", "guard", "guard", "recover"],
+    "vendedor": ["coin_toss", "coin_toss", "haggle", "haggle", "bribe", "bribe", "feint", "parry",
+                 "attack", "guard"],
+    "void_insect": ["void_sting", "void_sting", "void_sting", "mana_leech", "mana_leech", "chitin_shell",
+                    "chitin_shell", "void_buzz", "break", "guard"],
 }
 
 

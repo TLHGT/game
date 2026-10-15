@@ -17,8 +17,9 @@ from entities.npc import NPC
 from entities.props import Prop, Wall
 from entities.secret_object import SecretObject
 from entities.sign import Sign
+from entities.village import (Anvil, Barrel, Chicken, ClockActivator, PhaseBlock, VillageItem, VoidBarrier,
+                              VoidCircle, Well)
 from game import settings
-from world.collision import CollisionGrid
 from world.forest import generate_forest
 from world.map import GameMap
 from world.transition import HiddenArea, MapTransition, TriggerZone
@@ -37,6 +38,16 @@ INTERACTABLE_TYPES = {
     "perk_machine": PerkMachine,
     "perk_code": PerkCode,
     "pack_a_punch": PackAPunch,
+    # Aldea del vacío
+    "phase_block": PhaseBlock,
+    "clock_activator": ClockActivator,
+    "village_item": VillageItem,
+    "void_circle": VoidCircle,
+    "anvil": Anvil,
+    "void_barrier": VoidBarrier,
+    "barrel": Barrel,
+    "chicken": Chicken,
+    "well": Well,
 }
 
 
@@ -58,16 +69,21 @@ def build_map(data):
     width, height = data["size"]
     m = GameMap(data["id"], data.get("name", data["id"]), width, height)
 
-    m.walkable = [pygame.Rect(r) for r in data.get("walkable", [])]
-    m.collision = CollisionGrid(width, height, settings.COLLISION_CELL, m.walkable)
+    # Zonas caminables: [x, y, w, h] o {"rect": [...], "phases": [...]} (mapas con fases)
+    for r in data.get("walkable", []):
+        if isinstance(r, dict):
+            m.all_walkable.append((pygame.Rect(r["rect"]), r.get("phases")))
+        else:
+            m.all_walkable.append((pygame.Rect(r), None))
+    m.phase_flag = data.get("phase_flag")
     m.spawns = {k: tuple(v) for k, v in data.get("spawns", {}).items()}
     m.ground = data.get("ground", {})
     m.secrets = data.get("secrets", [])
 
-    m.walls = [Wall.from_data(d) for d in data.get("walls", [])]
+    m.all_walls = [_phased(Wall.from_data(d), d) for d in data.get("walls", [])]
     for d in data.get("obstacles", []) + data.get("decorations", []):
-        prop = Prop.from_data(d)
-        (m.obstacles if prop.solid else m.decorations).append(prop)
+        prop = _phased(Prop.from_data(d), d)
+        (m.all_obstacles if prop.solid else m.all_decorations).append(prop)
 
     for d in data.get("interactables", []):
         cls = INTERACTABLE_TYPES.get(d["type"])
@@ -76,9 +92,9 @@ def build_map(data):
             continue
         if cls is Enemy and not settings.ENEMIES_ENABLED:
             continue
-        m.interactables.append(cls.from_data(d))
+        m.all_interactables.append(_phased(cls.from_data(d), d))
 
-    m.triggers = [TriggerZone.from_data(d) for d in data.get("triggers", [])]
+    m.all_triggers = [_phased(TriggerZone.from_data(d), d) for d in data.get("triggers", [])]
     m.exits = [MapTransition.from_data(d) for d in data.get("exits", [])]
     m.hidden_areas = [HiddenArea(d["rect"], d.get("style", "foliage"), d.get("secret"))
                       for d in data.get("hidden_areas", [])]
@@ -86,13 +102,19 @@ def build_map(data):
     forest = data.get("forest")
     if forest:
         # Los muros y los interactuables no deben quedar tapados por árboles.
-        exclusions = [w.footprint.inflate(8, 8) for w in m.walls]
-        exclusions += [it.rect.inflate(40, 40) for it in m.interactables]
+        exclusions = [w.footprint.inflate(8, 8) for w in m.all_walls]
+        exclusions += [it.rect.inflate(40, 40) for it in m.all_interactables]
         exclusions += [pygame.Rect(r) for r in forest.get("exclude", [])]
-        m.forest = generate_forest(width, height, m.walkable, exclusions,
+        m.forest = generate_forest(width, height, m.all_walkable_rects(), exclusions,
                                    forest.get("spacing", settings.FOREST_TREE_SPACING),
                                    forest.get("seed", 0), forest.get("pine_ratio", 0.25),
                                    forest.get("style", "forest"))
 
-    m.build_index()
+    m.apply_phase(None)          # todo activo; el juego fija la fase real al cargar (Game.load_map)
     return m
+
+
+def _phased(obj, d):
+    """Copia "phases" del JSON al objeto (None = existe en todas las fases)."""
+    obj.phases = d.get("phases")
+    return obj

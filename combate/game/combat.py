@@ -507,6 +507,7 @@ class CombatEngine:
         r.consequences.append(f"{target.name} -{event.amount} HP" + (f" ({' · '.join(origin)})" if origin else ""))
         self.emit("hp", target.index, amount=-event.amount, damage_type=event.kind, channel=event.channel,
                   element=event.element)
+        self._check_defeat(target)
 
     # --- 4. Stability ------------------------------------------------------------------
     def _apply_stability(self, r, ctxs):
@@ -555,6 +556,12 @@ class CombatEngine:
                 r.consequences.append(f"{label(wc)} no desestabiliza")
             if wc.recovers_stability:
                 target[w], reason[w] = True, label(wc)
+        for i in range(2):                      # la carta deja UNSTABLE a quien la juega (Void Impact)
+            if ctxs[i].flags.get("self_instability") and r.outcome == WIN and r.winner == i \
+                    and r.cards[i] is not None and r.cards[i].recovers_stability:
+                continue                        # ...pero gana y recupera la Stability
+            if ctxs[i].flags.get("self_instability"):
+                target[i], reason[i] = False, f"{label(r.cards[i])} (coste)"
         for i in range(2):
             if ctxs[i].flags.get("recover_stability"):
                 target[i], reason[i] = True, label(r.cards[i])
@@ -729,6 +736,95 @@ class CombatEngine:
         self.emit("hp", player_index, amount=healed, damage_type="heal")
         return healed
 
+    def card_heal(self, player_index, amount):
+        """Efecto HEAL de una carta (Heal, Harvest): hasta la vida máxima."""
+        p = self.players[player_index]
+        healed = max(0, min(amount, p.max_hp - p.hp))
+        p.hp += healed
+        self.passive_note(f"{p.name} +{healed} HP" if healed else f"{p.name} ya tiene la vida al máximo")
+        if healed:
+            self.emit("hp", player_index, amount=healed, damage_type="heal")
+        return healed
+
+    def self_damage(self, player_index, amount, reason=""):
+        """Efecto SELF_DAMAGE (Void Impact): el que juega la carta pierde HP. No es
+        un HIT ni pasa por las pasivas."""
+        p = self.players[player_index]
+        lost = min(amount, p.hp)
+        p.hp -= lost
+        self.passive_note(f"{p.name}: {reason.upper()} le cuesta {lost} HP")
+        self.emit("hp", player_index, amount=-lost, damage_type="self")
+        self._check_defeat(p)
+        return lost
+
+    def reduce_max_mana(self, player_index, amount=1, reason=""):
+        """El Mana MÁXIMO baja `amount` (nunca de MIN_MAX_MANA) para el resto del
+        combate; el Mana actual se ajusta al nuevo tope."""
+        p = self.players[player_index]
+        new_max = max(self.rules.MIN_MAX_MANA, p.max_mana - amount)
+        lost = p.max_mana - new_max
+        why = f" ({reason})" if reason else ""
+        if not lost:
+            self.passive_note(f"{p.name}: el Mana máximo ya no puede bajar más{why}")
+            return 0
+        p.max_mana = new_max
+        self.passive_note(f"{p.name}: MANA MÁXIMO -{lost} -> {new_max}{why}")
+        self.emit("max_mana", player_index, max_mana=new_max)
+        self.emit("message", player_index, text=f"MANA MÁX. -{lost}")
+        if p.mana > new_max:
+            drop = p.mana - new_max
+            p.mana = new_max
+            self.emit("mana", player_index, amount=-drop)
+        return lost
+
+    def reduce_max_hp(self, player_index, pct, reason=""):
+        """La vida MÁXIMA baja un `pct` % (de la actual, medios hacia arriba; mínimo 1).
+        La vida actual se ajusta al nuevo tope."""
+        p = self.players[player_index]
+        new_max = max(1, apply_pct(p.max_hp, -pct))
+        lost = p.max_hp - new_max
+        if not lost:
+            return 0
+        p.max_hp = new_max
+        p.max_hp_lost += lost
+        why = f" ({reason})" if reason else ""
+        self.passive_note(f"{p.name}: VIDA MÁXIMA -{pct}% -> {new_max}{why}")
+        self.emit("max_hp", player_index, max_hp=new_max)
+        self.emit("message", player_index, text=f"VIDA MÁX. -{pct}%")
+        if p.hp > new_max:
+            drop = p.hp - new_max
+            p.hp = new_max
+            self.emit("hp", player_index, amount=-drop, damage_type="max_hp")
+        return lost
+
+    def _check_defeat(self, player):
+        """El jugador acaba de quedarse a 0 HP: su pasiva puede evitarlo
+        (Passive.on_defeat, p. ej. Corrupted). Si lo evita, sigue el combate."""
+        if player.hp <= 0 and player.passive is not None:
+            player.passive.on_defeat(player, self)
+
+    def transform(self, player_index, hp, max_hp=None, name=None, sprite=None, text=None):
+        """Una pasiva cambia al luchador a mitad de combate (Corrupted, Void Insect):
+        nueva vida (y nombre / sprite), sin estado alterado, STABLE y sin combo."""
+        p = self.players[player_index]
+        if max_hp is not None:
+            p.max_hp = max_hp
+        p.hp = max(0, min(hp, p.max_hp))
+        if name:
+            p.name = name
+        if p.status is not None:
+            p.status = None
+            self.emit("status", player_index, status=None, change="removed", previous=None)
+        if not p.stable:
+            p.stable = True
+            self.emit("stability", player_index, stable=True)
+        p.combo_hits = 0
+        if text:
+            self.passive_note(text)
+        self.emit("transform", player_index, name=p.name, sprite=sprite, hp=p.hp, max_hp=p.max_hp)
+        if text:
+            self.emit("message", player_index, text=text)
+
     def passive_alert(self, owner_index):
         """Pasiva Alerta: el rival queda UNSTABLE (al empezar el turno)."""
         owner, foe = self.players[owner_index], self.players[1 - owner_index]
@@ -840,6 +936,7 @@ class CombatEngine:
         player.hp = max(0, player.hp - amount)
         self._status_note(player.index, f"{status.id.value}: -{amount} HP")
         self.emit("hp", player.index, amount=-amount, damage_type=status.id.value.lower())
+        self._check_defeat(player)
 
     def expire_status(self, player, status, text):
         """Fin natural de un estado. Si ya se eliminó (o fue reemplazado), no hace nada."""
@@ -920,6 +1017,9 @@ class CombatEngine:
                     continue
                 target = i if data.get("target") == "self" else 1 - i
                 self.apply_status(target, data["status"], r)
+            for data in ctxs[i].flags.get("reduce_max_mana", []):     # REDUCE_MAX_MANA (Void Sting...)
+                if self._status_condition(data, r, i):
+                    self.reduce_max_mana(1 - i, data.get("amount", 1), label(r.cards[i]) if r.cards[i] else "")
 
     @staticmethod
     def _status_condition(data, r, i):

@@ -10,7 +10,9 @@ class Player:
         self.rules = rules
         self.hp = rules.MAX_HP
         self.max_hp = rules.MAX_HP    # tope de curación (un enemigo puede empezar con menos)
+        self.max_hp_lost = 0          # vida máxima que le han quitado en este combate (Void consumption)
         self.mana = rules.STARTING_MANA
+        self.max_mana = rules.MAX_MANA  # tope de Mana (algunos enemigos lo reducen en combate)
         self.stable = True
         self.combo_hits = 0           # cadena de hits CONSECUTIVOS (propia de cada jugador)
         self.hand = []
@@ -28,7 +30,7 @@ class Player:
     # --- Mana ---------------------------------------------------------------
     def gain_mana(self, amount):
         before = self.mana
-        self.mana = max(0, min(self.rules.MAX_MANA, self.mana + amount))
+        self.mana = max(0, min(self.max_mana, self.mana + amount))
         return self.mana - before
 
     def spend_mana(self, amount):

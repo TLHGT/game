@@ -11,6 +11,9 @@ start_battle...
 Combate: cuando un enemigo (entities/enemy.py) toca al jugador, la
 exploración se congela y se abre una BattleScene (game/battle_scene.py), que
 usa el combate de cartas de combate/. Al terminar se vuelve al mapa.
+
+Aldea del vacío: la misión (systems/village_quest.py, ctx.village) cambia la
+fase del mapa; GameMap.update la aplica y llama a on_phase_changed.
 """
 import math
 
@@ -34,18 +37,22 @@ from systems.game_state import GameState
 from systems.interaction_system import InteractionSystem
 from systems.perk_puzzle import PerkPuzzle
 from systems.secret_system import SecretSystem
+from systems.village_quest import BOSS_SECRET, END, PHASE_FLAG, PHASE_NAMES, TRADE_NAMES, VillageQuest
 from ui.debug_overlay import DebugOverlay
 from ui.dialogue import DialogueBox
 from ui.interaction_prompt import InteractionPrompt
 from ui.notification import NotificationManager
 from ui.choice_menu import ChoiceMenu
 from ui.pause_menu import PauseMenu
+from ui.text import font as text_font
 from world.collision import move_and_collide
 from world.map_loader import load_map, map_exists
 
 FADE_SPEED = 3.5   # fundido de transición (por segundo)
 JUMP_TIME = 0.55   # duración del salto de Hero (segundos)
 JUMP_HEIGHT = 70   # altura visual del arco (píxeles)
+BLACKOUT_TIME = 2.5   # pozo de la aldea: segundos de pantalla negra
+CHICKEN_ESCAPE = (40, 1480)   # por dónde huye el pollo humanoide (borde oeste de la aldea)
 
 
 class Game:
@@ -67,6 +74,7 @@ class Game:
         self.secrets.add_listener(self._on_secret_unlocked)
         self.interaction = InteractionSystem()
         self.perks = PerkPuzzle(self.state, settings.PERK_SEQUENCE)   # máquinas de ventajas del hospital
+        self.village = VillageQuest(self.state, settings.VILLAGE_SEED)  # misión de la Aldea del vacío
 
         # UI
         self.dialogue = DialogueBox(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)
@@ -94,6 +102,7 @@ class Game:
         self._pending_map = None        # (map_id, spawn) durante un fundido
         self._spawn = settings.START_SPAWN
         self._jump = None               # (inicio, destino, tiempo) durante un salto
+        self._blackout = None           # [segundos, mensaje]: pantalla negra del pozo
         self.load_map(settings.START_MAP, settings.START_SPAWN)
 
     # ======================================================================
@@ -141,7 +150,8 @@ class Game:
         """True si el jugador no controla la exploración (diálogo, fundido, combate, salto)."""
         return (self.dialogue.is_open or self._pending_map is not None or self.pause.is_open
                 or self.choice.is_open
-                or self._pending_battle is not None or self.battle is not None or self._jump is not None)
+                or self._pending_battle is not None or self.battle is not None or self._jump is not None
+                or self._blackout is not None)
 
     # ======================================================================
     # Habilidades de aventura (entities/adventure.py)
@@ -181,12 +191,84 @@ class Game:
                 zone.check_enter(self.player.rect)
 
     # ======================================================================
+    # Aldea del vacío (systems/village_quest.py)
+    # ======================================================================
+    def on_phase_changed(self, world):
+        """La misión cambió la fase del mapa: suelo nuevo, y que nadie quede atrapado."""
+        self.renderer.prepare(world)
+        self._unstick()
+        if world.phase_flag == PHASE_FLAG and world.phase in PHASE_NAMES:
+            self.notify(PHASE_NAMES[world.phase], "area")
+
+    def _unstick(self):
+        """Si algo sólido apareció encima del jugador, lo aparta al hueco libre más cercano."""
+        p = self.player
+        if p.rect.collidelist(self.world.solids_near(p.rect)) == -1:
+            return
+        x0, y0 = p.x, p.y
+        for radius in range(10, 400, 10):
+            for k in range(16):
+                a = k * math.tau / 16
+                p.x, p.y = x0 + math.cos(a) * radius, y0 + math.sin(a) * radius
+                if p.rect.collidelist(self.world.solids_near(p.rect)) == -1:
+                    return
+        p.x, p.y = x0, y0
+
+    def on_soul_dropped(self, trade):
+        """Un aldeano hueco vencido suelta su alma (solo en la fase de las almas)."""
+        result = self.village.grant_soul(trade)
+        if result == "got":
+            self.notify(f"Recoges el alma de un {TRADE_NAMES[trade]}. Llévala a su círculo del vacío.", "discovery")
+        elif result == "full":
+            self.notify("Ya llevas un alma: la nueva se deshace en humo morado.")
+
+    def _chicken(self):
+        return self.world.get_interactable("pollo") if self.world else None
+
+    def chicken_mutates(self):
+        self.village.set_chicken("mutated")
+        chicken = self._chicken()
+        if chicken is not None:
+            chicken.run_away(CHICKEN_ESCAPE)
+        self.notify("El pollo humanoide se pierde entre los árboles quemados.", "discovery")
+
+    def _scare_chicken(self):
+        """Empieza un combate con el pollo en brazos: huye al gallinero."""
+        if self.village.chicken != "carried":
+            return
+        self.village.set_chicken("coop")
+        chicken = self._chicken()
+        if chicken is not None:
+            chicken.return_home()
+        self.notify("El pollo se asusta, aletea y huye de vuelta al gallinero.")
+
+    def blackout_to_start(self, message):
+        """Pozo especial: pantalla negra unos segundos y de vuelta al principio del mapa."""
+        self.player.stop()
+        self._blackout = [BLACKOUT_TIME, message]
+
+    def _update_blackout(self, dt):
+        self._blackout[0] -= dt
+        self.fade = 1.0
+        if self._blackout[0] > 0:
+            return
+        message = self._blackout[1]
+        self._blackout = None
+        x, y = self.world.spawns.get("default", (64, 64))
+        self.player.x, self.player.y = float(x), float(y)
+        self.camera.snap_to(self.player.x, self.player.y)
+        for zone in self.world.exits + self.world.triggers:
+            zone.check_enter(self.player.rect)
+        self.notify(message, "discovery")
+
+    # ======================================================================
     # Combate
     # ======================================================================
     def start_battle(self, enemy):
         if self.busy or enemy.defeated:
             return
         self.player.stop()
+        self._scare_chicken()
         if enemy.intro:
             self.show_dialogue(enemy.intro, speaker=enemy.name,
                                on_close=lambda: self._begin_battle(enemy))
@@ -215,7 +297,7 @@ class Game:
         elif result == "lose":
             # Vuelves al punto de entrada del mapa; los enemigos regresan a su sitio
             self.load_map(self.world.id, self._spawn)
-            for it in self.world.interactables:
+            for it in self.world.all_interactables:
                 if isinstance(it, Enemy):
                     it.on_escaped()
             self.notify("Has sido derrotado... Te recuperas en la entrada de la zona.", "discovery")
@@ -226,6 +308,8 @@ class Game:
     def _on_secret_unlocked(self, secret_id, info):
         if info.get("unlock_message"):
             self.notify(info["unlock_message"], "discovery")
+        if secret_id == BOSS_SECRET:                 # Aldea: el insecto ha caído, el portal se cierra
+            self.village.set_phase(END)
         for message in power_messages(secret_id, self.secrets):
             self.notify(message, "discovery")
         if self.world:
@@ -239,13 +323,14 @@ class Game:
         # (cofres abiertos, etapas de la radio...). Base del futuro guardado.
         if self.world:
             self.state.map_states[self.world.id] = {
-                it.id: it.get_state() for it in self.world.interactables if it.id}
+                it.id: it.get_state() for it in self.world.all_interactables if it.id}
         self.world = load_map(map_id)
         self._spawn = spawn
         saved = self.state.map_states.get(map_id, {})
-        for it in self.world.interactables:
+        for it in self.world.all_interactables:
             if it.id in saved:
                 it.set_state(saved[it.id])
+        self.world.apply_phase(self.world.current_phase(self.state))   # mapas con fases (aldea)
         for s in self.world.secrets:
             self.secrets.register(s["id"], s.get("name", ""), s.get("unlock_message"))
             if self.secrets.is_unlocked(s["id"]):      # secretos ya conseguidos
@@ -332,6 +417,11 @@ class Game:
             self.pause.open()
             return
 
+        if self._blackout is not None:
+            self._update_blackout(dt)
+            self.notifications.update(dt)
+            return
+
         busy = self.busy
         if self.dialogue.is_open:
             if self.input.pressed("confirm"):
@@ -372,6 +462,26 @@ class Game:
         self.notifications.update(dt)
         self._update_fade(dt)
 
+    def _draw_carried(self):
+        """Aldea: qué llevas encima (el alma de un aldeano, el pollo)."""
+        if self.world.phase_flag != PHASE_FLAG:
+            return
+        lines = []
+        if self.village.soul:
+            lines.append(f"Alma de {TRADE_NAMES[self.village.soul]}")
+        if self.village.chicken == "carried":
+            lines.append("Pollo en brazos")
+        y = 16
+        for line in lines:
+            surf = text_font(18, bold=True).render(line, True, (230, 200, 255))
+            box = surf.get_rect(topleft=(16, y)).inflate(18, 10)
+            panel = pygame.Surface(box.size, pygame.SRCALPHA)
+            panel.fill((30, 16, 44, 200))
+            self.screen.blit(panel, box)
+            pygame.draw.rect(self.screen, (150, 90, 210), box, 2, border_radius=6)
+            self.screen.blit(surf, (box.x + 9, box.y + 5))
+            y += box.h + 6
+
     def _update_fade(self, dt):
         if self._pending_battle is not None:
             self.fade = min(1.0, self.fade + dt * settings.BATTLE_FADE_SPEED)
@@ -408,6 +518,7 @@ class Game:
         self.dialogue.draw(self.screen)
         if self.debug.enabled:
             self.debug.draw_text(self.screen, self)
+        self._draw_carried()
         self.choice.draw(self.screen)
         self.pause.draw(self.screen)
         if self.fade > 0:

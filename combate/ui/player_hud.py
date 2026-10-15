@@ -50,20 +50,32 @@ def draw_hud(surface, player, rules, hp_shown, time, show_redraws=False, pulse=N
     cur = bar.copy(); cur.w = int(bar.w * max(0, player.hp) / rules.MAX_HP)
     hp_col = T.HP_COLOR if player.hp > rules.MAX_HP * 0.3 else T.UNSTABLE_COLOR
     pygame.draw.rect(surface, hp_col, cur, border_radius=6)
+    if getattr(player, "max_hp_lost", 0):   # vida máxima perdida (Void consumption): tramo tachado
+        gone = pygame.Rect(bar.x + int(bar.w * player.max_hp / rules.MAX_HP), bar.y, 0, bar.h)
+        gone.w = bar.right - gone.x
+        pygame.draw.rect(surface, (24, 18, 30), gone, border_radius=6)
+        for sx in range(gone.x + 4, gone.right, 9):
+            pygame.draw.line(surface, (150, 80, 200), (sx, gone.bottom - 2), (min(sx + 7, gone.right), gone.y + 2), 2)
     T.text(surface, f"{player.hp}", 20, T.TEXT, (bar.right + 12, bar.centery), "midleft")
 
     # Mana
     T.text(surface, "MANA", 18, T.DIM, (x + 14, y + 72))
+    max_mana = getattr(player, "max_mana", rules.MAX_MANA)
     for k in range(rules.MAX_MANA):
         c = mana_pip_pos(i, k, rules)
         full = k < mana
+        if k >= max_mana:       # Mana máximo perdido en este combate: hueco tachado
+            pygame.draw.circle(surface, (30, 24, 40), c, 11)
+            pygame.draw.line(surface, (150, 80, 200), (c[0] - 7, c[1] - 7), (c[0] + 7, c[1] + 7), 3)
+            pygame.draw.line(surface, (150, 80, 200), (c[0] - 7, c[1] + 7), (c[0] + 7, c[1] - 7), 3)
+            continue
         pygame.draw.circle(surface, (40, 48, 80), c, 11)
         if full:
             pygame.draw.circle(surface, T.MANA_COLOR, c, 10)
             pygame.draw.circle(surface, (190, 215, 255), (c[0] - 3, c[1] - 3), 3)
         if pulse.get("mana", 0) > 0:
             pygame.draw.circle(surface, T.TEXT, c, int(12 + 6 * pulse["mana"]), 2)
-    T.text(surface, f"{mana} / {rules.MAX_MANA}", 18, T.TEXT,
+    T.text(surface, f"{mana} / {max_mana}", 18, T.TEXT,
            (mana_pip_pos(i, rules.MAX_MANA - 1, rules)[0] + 22, y + 72))
 
     # Hits del combo

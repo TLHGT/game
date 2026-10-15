@@ -11,6 +11,8 @@ Ganchos que llama el motor (todos opcionales; la clase base no hace nada):
                                          cambiar event.amount o curarse (event.heal = True)
     on_turn_start(owner, engine)         al empezar cada turno (tras los estados)
     after_interaction(owner, engine, r)  al final de cada interacción (tras los estados de las cartas)
+    on_defeat(owner, engine)             el dueño acaba de quedarse a 0 HP: puede revivir o
+                                         transformarse (engine.transform) en lugar de caer
     set_affinity(element)                lo usan cartas con el efecto SET_AFFINITY
 El daño de los estados (BURN, POISON) no pasa por los ganchos de daño, y los
 datos de las cartas nunca se modifican.
@@ -29,7 +31,7 @@ y los medios hacia arriba (10 +5% = 10.5 -> 11). Ver apply_pct.
 """
 from dataclasses import dataclass, field
 
-from combate.game.rules import DAMAGE_INTERACTION, DAMAGE_MEGA_COMBO
+from combate.game.rules import DAMAGE_INTERACTION, DAMAGE_MEGA_COMBO, WIN
 from combate.game.status import StatusId
 
 PASSIVES = {}
@@ -77,6 +79,14 @@ class Passive:
 
     def after_interaction(self, owner, engine, r):
         pass
+
+    def on_defeat(self, owner, engine):
+        pass
+
+
+def won_with_hit(owner, r):
+    """¿El dueño ganó la interacción `r` haciendo HIT al rival?"""
+    return r.outcome == WIN and r.winner == owner.index and r.received_hit[1 - owner.index]
 
 
 @passive("fire_affinity")
@@ -165,7 +175,7 @@ class Undead(Passive):
         return f"marcas {self.marks} · +{self.heal_amount(player)} HP por turno"
 
 
-ELEMENT_NAMES = {"FIRE": "FUEGO", "ICE": "HIELO"}
+ELEMENT_NAMES = {"FIRE": "FUEGO", "ICE": "HIELO", "VOID": "VACÍO"}
 OPPOSITE_ELEMENT = {"FIRE": "ICE", "ICE": "FIRE"}
 
 
@@ -229,6 +239,8 @@ class ElementalAffinity(Passive):
 
         - Recibir daño de su MISMO elemento le cura esa cantidad.
         - Recibir daño del elemento CONTRARIO: x1.5 (weak_pct = 50).
+        - Daño de cartas sin elemento (o de otro elemento): x0.5 (resist_pct = 50).
+          El Mega Combo no es daño de una carta: le hace el daño normal.
         - Si le hacen HIT con una carta de tipo ATTACK (contacto), el atacante
           sufre BURN (en modo FUEGO) o FREEZE (en modo HIELO).
     """
@@ -239,8 +251,8 @@ class ElementalAffinity(Passive):
         self.element = config.get("start", "FIRE")
 
     def summary(self):
-        return ("Cambia entre FUEGO e HIELO. Su elemento le cura; el contrario le hace x1.5. "
-                "Golpearle con ATTACK: BURN en FUEGO, FREEZE en HIELO")
+        return ("Cambia entre FUEGO e HIELO. Su elemento le cura; el contrario le hace x1.5; "
+                "el resto, la mitad. Golpearle con ATTACK: BURN en FUEGO, FREEZE en HIELO")
 
     def status_text(self, player, engine):
         el = self.element
@@ -252,13 +264,16 @@ class ElementalAffinity(Passive):
         return changed
 
     def incoming_damage(self, event, engine, r):
-        if event.kind != DAMAGE_INTERACTION or event.element not in OPPOSITE_ELEMENT:
+        if event.kind != DAMAGE_INTERACTION:
             return
         if event.element == self.element:
             event.heal = True
         elif event.element == OPPOSITE_ELEMENT[self.element]:
             event.weak_base = event.amount
             event.amount = apply_pct(event.amount, self.config["weak_pct"])
+        else:                                   # sin elemento o de otro elemento: la mitad
+            event.weak_base = event.amount
+            event.amount = apply_pct(event.amount, -self.config.get("resist_pct", 50))
 
     def after_interaction(self, owner, engine, r):
         attacker = 1 - owner.index
@@ -266,6 +281,111 @@ class ElementalAffinity(Passive):
         if r.received_hit[owner.index] and card is not None and card.card_type in self.config["contact_types"]:
             engine.passive_status(owner.index, attacker, self.config["contact"][self.element], r,
                                   f"{ELEMENT_NAMES[self.element]}")
+
+
+@passive("corrupted")
+class Corrupted(Passive):
+    """Aldeanos huecos de la aldea (herrero, granjero, vendedor). La primera vez
+    que se quedan a 0 HP recuperan `revive_pct` % de su vida máxima y se
+    transforman (sprite `sprite`). Transformados, cada interacción que ganan
+    haciendo HIT reduce en `mana_drain` el Mana MÁXIMO del rival."""
+    name = "Corrupted"
+
+    def __init__(self, **config):
+        super().__init__(**config)
+        self.transformed = False
+
+    def summary(self):
+        return (f"A 0 HP recupera el {self.config['revive_pct']}% de su vida y se transforma: "
+                f"cada HIT que te hace te quita {self.config['mana_drain']} de Mana máximo")
+
+    def status_text(self, player, engine):
+        if self.transformed:
+            return f"TRANSFORMADO · cada HIT: -{self.config['mana_drain']} Mana máximo"
+        return f"a 0 HP se transforma (+{self.config['revive_pct']}% de vida)"
+
+    def on_defeat(self, owner, engine):
+        if self.transformed:
+            return
+        self.transformed = True
+        engine.transform(owner.index, apply_pct(owner.max_hp, self.config["revive_pct"] - 100),
+                         name=f"{owner.name} {self.config.get('suffix', 'CORRUPTO')}",
+                         sprite=self.config.get("sprite"), text="¡CORRUPTED!")
+
+    def after_interaction(self, owner, engine, r):
+        if self.transformed and won_with_hit(owner, r):
+            engine.reduce_max_mana(1 - owner.index, self.config["mana_drain"], "CORRUPTED")
+
+
+VOID = "VOID"
+
+
+@passive("void_insect")
+class VoidInsect(Passive):
+    """Jefe de la aldea. Todo el combate es UNA pelea en cuatro etapas:
+
+        1. VOID INSECT     Void breeding: cada HIT recibido le da 1 carga (máx. `max_charges`).
+        2. CRÍA 1          A 0 HP aparecen dos crías, una tras otra, con cargas x10 / 2 HP
+        3. CRÍA 2          cada una (10 cargas = 50 HP). Sin cargas, no hay crías.
+        4. VOID INSECT     Vuelve con `phase2_pct` % de su vida máxima. Void consumption:
+                           cada interacción que gana con HIT te quita `consume_pct` % de tu
+                           vida máxima.
+    Part of the void (en todas las etapas): el daño de cartas VOID le cura el doble.
+    """
+    name = "Void insect"
+    STAGES = ("main", "brood1", "brood2", "rage")
+
+    def __init__(self, **config):
+        super().__init__(**config)
+        self.stage = "main"
+        self.charges = 0
+        self.base_max = None
+
+    @property
+    def brood_hp(self):
+        return self.charges * 10 // 2
+
+    def summary(self):
+        return ("Part of the void: el daño VOID le cura el doble. Void breeding: cada HIT le da una carga; "
+                "a 0 HP deja dos crías (cargas x10 / 2 HP). Después vuelve: Void consumption")
+
+    def status_text(self, player, engine):
+        if self.stage == "main":
+            return f"BREEDING · cargas {self.charges}/{self.config['max_charges']} · crías de {self.brood_hp} HP"
+        if self.stage in ("brood1", "brood2"):
+            return f"CRÍA {self.stage[-1]}/2 · el VACÍO la cura"
+        return f"CONSUMPTION · cada HIT: -{self.config['consume_pct']}% vida máx."
+
+    def incoming_damage(self, event, engine, r):
+        if event.kind == DAMAGE_INTERACTION and event.element == VOID:      # Part of the void
+            event.amount *= self.config.get("void_heal_mult", 2)
+            event.heal = True
+
+    def after_interaction(self, owner, engine, r):
+        if self.stage == "main" and r.received_hit[owner.index] and r.hit_generated:
+            before = self.charges
+            self.charges = min(self.config["max_charges"], self.charges + r.hit_generated)
+            if self.charges != before:
+                engine.passive_note(f"{owner.name}: VOID BREEDING -> {self.charges} cargas")
+        elif self.stage == "rage" and won_with_hit(owner, r):
+            engine.reduce_max_hp(1 - owner.index, self.config["consume_pct"], "VOID CONSUMPTION")
+
+    def on_defeat(self, owner, engine):
+        if self.base_max is None:
+            self.base_max = owner.max_hp
+        if self.stage == "main" and self.brood_hp > 0:
+            self.stage = "brood1"
+            engine.transform(owner.index, self.brood_hp, self.brood_hp, name="CRÍA DEL VACÍO 1",
+                             sprite=self.config.get("brood_sprite"), text="¡UNA CRÍA!")
+        elif self.stage == "brood1":
+            self.stage = "brood2"
+            engine.transform(owner.index, self.brood_hp, self.brood_hp, name="CRÍA DEL VACÍO 2",
+                             sprite=self.config.get("brood_sprite"), text="¡OTRA CRÍA!")
+        elif self.stage in ("main", "brood2"):
+            self.stage = "rage"
+            hp = apply_pct(self.base_max, self.config["phase2_pct"] - 100)
+            engine.transform(owner.index, hp, self.base_max, name="VOID INSECT",
+                             sprite=self.config.get("rage_sprite"), text="¡VOID CONSUMPTION!")
 
 
 @dataclass(frozen=True)
@@ -357,6 +477,24 @@ register_character(Character(
     id="elemental_wolf", name="Elemental Wolf",
     description="Lobo espectral de fuego y hielo.",
     passive_id="elemental_affinity",
-    passive_config={"start": "FIRE", "weak_pct": 50, "contact_types": ("ATTACK",),
+    passive_config={"start": "FIRE", "weak_pct": 50, "resist_pct": 50, "contact_types": ("ATTACK",),
                     "contact": {"FIRE": StatusId.BURN.value, "ICE": StatusId.FREEZE.value}},
+    playable=False))
+
+# --- Aldea del vacío -----------------------------------------------------------------
+for _cid, _name, _what in (("herrero", "Herrero", "herrero"), ("granjero", "Granjero", "granjero"),
+                           ("vendedor", "Vendedor", "vendedor")):
+    register_character(Character(
+        id=_cid, name=_name,
+        description=f"Un {_what} de la aldea, hueco por dentro: el vacío lo mueve.",
+        passive_id="corrupted",
+        passive_config={"revive_pct": 50, "mana_drain": 1, "sprite": f"villager_{_cid}_void"},
+        playable=False))
+
+register_character(Character(
+    id="void_insect", name="Void Insect",
+    description="Mosca enorme del vacío que intenta abrir un portal en el cielo.",
+    passive_id="void_insect",
+    passive_config={"max_charges": 10, "phase2_pct": 50, "consume_pct": 20, "void_heal_mult": 2,
+                    "brood_sprite": "void_insect_brood", "rage_sprite": "void_insect_rage"},
     playable=False))

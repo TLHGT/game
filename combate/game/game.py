@@ -326,6 +326,16 @@ class App:
                 self.anim.popup(f"+{d['pct']}%", (side_pos(p)[0], 250), T.GOLD, 30)
             elif ev.kind == "stability":
                 self.view.pulse[p]["stability"] = 0.4
+            elif ev.kind == "transform":            # Corrupted / Void Insect: otro luchador
+                if d.get("sprite"):
+                    self.view.fighter_keys[p] = d["sprite"]
+                self.view.hp_shown[p] = d["hp"]
+                self.view.pulse[p]["passive"] = 1.0
+                self.anim.flash.add((150, 70, 210), 0.5)
+                self.anim.shake.add(10, 0.4)
+            elif ev.kind in ("max_mana", "max_hp"):  # Corrupted / Void consumption
+                self.view.pulse[p]["mana" if ev.kind == "max_mana" else "passive"] = 0.8
+                self.anim.flash.add((150, 70, 210), 0.25)
             elif ev.kind == "hit":
                 self.view.pulse[p]["hits"] = 0.6
                 self.anim.popup(f"HIT {d['hits']}", side_pos(p), T.PLAYER_COLORS[p], 40)

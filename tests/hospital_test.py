@@ -24,6 +24,7 @@ from pathing import go, reachable  # noqa: E402
 
 settings.START_MAP = "hospital_exterior"
 settings.PERK_SEQUENCE = (2, 4, 1, 3)          # secuencia fija para poder probar el puzle
+settings.DECKS_PATH = os.path.join(tempfile.mkdtemp(), "decks_hospital.json")   # no lee los mazos del usuario
 
 
 def change_map(b, direction, expected):
@@ -189,7 +190,7 @@ def main():
     ed = scene.editor
     available = set(settings.AVAILABLE_CARDS)
     b.check(ed.locked and not (ed.locked & available) and set(CATALOG) - ed.locked == available,
-            f"Solo hay 12 cartas disponibles; el resto ({len(ed.locked)}) salen bloqueadas")
+            f"Solo hay {len(available)} cartas disponibles; el resto ({len(ed.locked)}) salen bloqueadas")
     scene.deck_action("duplicate")
     scene.deck_action("new")
     b.check(scene.editor.name == "hospital" and not scene.editor.is_new, "No se pueden crear ni duplicar mazos")

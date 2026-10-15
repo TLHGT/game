@@ -10,6 +10,7 @@ from combate.game.ai import CardAI
 from combate.game.characters import playable_characters
 from combate.game.combat import CombatEngine
 from combate.game.deck_editor import CATALOG, DeckEditor, MenuState
+from combate.game.rules import DAMAGE_INTERACTION, DAMAGE_MEGA_COMBO, DamageEvent
 from combate.game.status import StatusId
 
 WOLF = 1
@@ -69,7 +70,7 @@ class TestElementalWolf(unittest.TestCase):
         e = wolf_engine(["attack", "guard"], ["break", "guard"], "FIRE")
         duel(e, "attack", "break")
         self.assertTrue(e.players[0].has_status(StatusId.BURN))
-        self.assertEqual(e.players[WOLF].hp, 90)
+        self.assertEqual(e.players[WOLF].hp, 95, "ATTACK sin elemento: 10 x0.5 = 5")
 
     def test_attack_hit_in_ice_mode_freezes_the_attacker(self):
         e = wolf_engine(["attack", "guard"], ["break", "guard"], "ICE")
@@ -97,6 +98,23 @@ class TestElementalWolf(unittest.TestCase):
         e = wolf_engine(["ice_shard", "guard"], ["break", "guard"], "ICE", wolf_hp=70)
         duel(e, "ice_shard", "break")
         self.assertEqual(e.players[WOLF].hp, 80, "HIELO en modo HIELO: le cura")
+
+    def test_no_element_does_half(self):
+        for mode in ("FIRE", "ICE"):
+            for mine, theirs in (("attack", "break"), ("magic", "break"), ("break", "guard")):
+                e = wolf_engine([mine, "guard"], [theirs, "guard"], mode, wolf_hp=70)
+                duel(e, mine, theirs)
+                self.assertEqual(e.players[WOLF].hp, 65, f"{mine} sin elemento en modo {mode}: 10 x0.5 = 5")
+
+    def test_other_element_does_half_and_mega_combo_is_normal(self):
+        e = wolf_engine(["guard"], ["guard"], "FIRE")
+        passive = e.players[WOLF].passive
+        other = DamageEvent(DAMAGE_INTERACTION, 0, WOLF, 15, element="LIGHTNING")
+        passive.incoming_damage(other, e, None)
+        self.assertEqual((other.amount, other.heal), (8, False), "15 x0.5 = 7.5 -> 8 (medios hacia arriba)")
+        mega = DamageEvent(DAMAGE_MEGA_COMBO, 0, WOLF, 20)
+        passive.incoming_damage(mega, e, None)
+        self.assertEqual(mega.amount, 20, "El Mega Combo no es daño de carta")
 
     def test_heal_is_capped(self):
         e = wolf_engine(["fire_bolt", "guard"], ["break", "guard"], "FIRE", wolf_hp=95)

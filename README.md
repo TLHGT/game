@@ -17,6 +17,11 @@ han modificado: todo está copiado aquí.
 hospital (`hospital_exterior`). El Bosque de Arken sigue
 disponible (`python main.py maps/forest.json`).
 
+Hay una **segunda versión**, la **Aldea del vacío** (`python main_aldea.py` o
+`jugar_aldea.bat`; ver más abajo): otra dungeon con el **mismo código**, que
+empieza en la aldea y guarda su mazo aparte. Los cambios de gameplay (cartas,
+personajes, combate) valen para las dos.
+
 > *"La historia te lleva por el mundo; la exploración te recompensa por desviarte."*
 
 ## Instalación
@@ -31,6 +36,7 @@ pip install -r requirements.txt
 
 ```bash
 python main.py                        # el hospital (o doble clic en jugar.bat)
+python main_aldea.py                  # la Aldea del vacío (o doble clic en jugar_aldea.bat)
 python main.py maps/forest.json       # el Bosque de Arken
 python main.py ruta/a/mi_mapa.json    # jugar un mapa concreto (p. ej. del diseñador de niveles)
 python combate/main.py                # el duelo de cartas PvP original (2 jugadores, menú y editor de mazos)
@@ -39,21 +45,26 @@ python combate/main.py                # el duelo de cartas PvP original (2 jugad
 Los mapas se pueden dibujar con el diseñador visual de la carpeta
 `disenador-de-niveles/` (ver su `LEEME.md`); ya sabe colocar **enemigos**.
 
-### Ejecutable para Windows
+### Ejecutables para Windows
 
-`dist/HospitalAbandonado.exe` es el juego del hospital en un solo archivo:
-no necesita Python ni nada instalado (se publica en las *releases* de GitHub).
-Solo lleva los mapas del hospital (`hospital_*.json` + `elevators.json`) y
-`assets/`; el bosque y el duelo PvP no entran. Para regenerarlo:
+Cada versión tiene su propio `.exe` de un solo archivo (no necesitan Python ni
+nada instalado; se publican en las *releases* de GitHub):
+
+| Ejecutable | Versión | Mapas que lleva | Mazos |
+|---|---|---|---|
+| `dist/HospitalAbandonado.exe` | El hospital | `hospital_*.json` + `elevators.json` | `decks_hospital.json` |
+| `dist/AldeaDelVacio.exe` | La Aldea del vacío | `aldea.json` | `decks_aldea.json` |
+
+Los dos llevan `assets/`; el bosque y el duelo PvP no entran. Para regenerarlos:
 
 ```bash
 pip install pyinstaller
-python tools/build_exe.py
+python tools/build_exe.py            # HospitalAbandonado.exe
+python tools/build_exe.py --aldea    # AldeaDelVacio.exe
 ```
 
 Si junto al `.exe` existe una carpeta `maps/` o `assets/`, se usa esa en lugar
-de la empaquetada. Los mazos editados se guardan en `decks_hospital.json`
-junto al `.exe`.
+de la empaquetada. Los mazos editados se guardan junto al `.exe`.
 
 Pruebas automáticas (sin ventana):
 
@@ -61,6 +72,7 @@ Pruebas automáticas (sin ventana):
 python tests/smoke_test.py            # exploración del bosque (sin enemigos)
 python tests/hospital_test.py         # el hospital entero: menú de pausa, combates, pasivas de los enemigos
 python tests/battle_test.py           # exploración + combate: encuentros, partida completa, huir, perder, ganar
+python tests/aldea_test.py            # la Aldea del vacío entera: fases, almas, jefe y easter eggs
 cd combate/tests && python -m unittest   # las pruebas de reglas del combate (test_hospital.py: Taunt, pasivas de enemigos)
 # --shots en cualquiera de los tres primeros guarda capturas en tests/shots/
 ```
@@ -178,6 +190,10 @@ pero sin otro acceso. Para el salto, pon otra losa dentro para volver.
 - **Huir** (`ESC`) o **empate**: vuelves al mapa donde estabas y el enemigo
   tarda 3 s en volver a atacar. Los jefes no dejan huir.
 - Cada combate empieza de cero (100 HP, 3 de Mana), como en el duelo original.
+- **El escenario**: en el centro de la pantalla hay un suelo con los dos
+  personajes encima (tu avatar a la izquierda; el enemigo, con su sprite del
+  mapa, a la derecha) y, a cada lado, la carta que ha jugado cada uno.
+  Ver «Escenario y animaciones» en `combate/README.md`.
 - **Tu mazo y personaje**: el personaje se cambia en el menú de pausa (TAB).
   Mazo solo hay uno, `hospital` (`HOSPITAL_DECK` en `game/settings.py`), que se
   edita desde la pausa; ver «Mazo y cartas en el hospital» más abajo.
@@ -196,6 +212,8 @@ del duelo PvP. Todo está en `combate/game/characters.py`.
 | **Jurgenoid** | Sí | **Undead**: cada HIT recibido le da una marca (duran todo el combate); al empezar cada turno se cura 0.5% de su vida máxima por marca (1 marca = 1 HP, 2 = 1, 3 = 2, 4 = 2...: medios hacia arriba). Un golpe de 2 HIT da 2 marcas. Sin habilidad de aventura por ahora |
 | Dron de seguridad | No | **Alerta**: cada 3 turnos (turnos 3, 6, 9...) lanza una señal de alerta al empezar el turno y te deja UNSTABLE |
 | Elemental Wolf | No | **Afinidad elemental**, ver abajo |
+| Herrero, Granjero, Vendedor | No | **Corrupted**: a 0 HP recuperan el 50% de su vida y se transforman; transformados, cada HIT que te hacen te quita 1 de Mana máximo. Ver «Aldea del vacío» |
+| Void Insect | No | **Part of the void**, **Void breeding** y **Void consumption** (jefe de la aldea). Ver «Aldea del vacío» |
 
 **Elemental Wolf** (jefe de la azotea). Está siempre en **MODO FUEGO** o
 **MODO HIELO** (empieza en FUEGO) y cambia con sus cartas exclusivas:
@@ -205,6 +223,9 @@ del duelo PvP. Todo está en `combate/game/characters.py`.
 - **Daño de su mismo elemento**: le **cura** esa cantidad (hasta su vida máxima).
 - **Daño del elemento contrario**: **x1.5** (se aplica después de la pasiva del
   atacante: Blaze con Fire Bolt en modo HIELO hace 10 → 11 → 17).
+- **Daño de cartas sin elemento o de otro elemento** (Attack, Break, Magic...):
+  **x0.5**, medios hacia arriba (10 → 5). El Mega Combo no es daño de una
+  carta: le hace el daño normal.
 
 Su mazo (`ENEMY_DECKS["elemental_wolf"]`) lleva cuatro cartas **exclusivas**:
 
@@ -225,6 +246,8 @@ y no se pueden meter en un mazo del jugador. Los mazos de enemigos
 |---|---|---|
 | **Taunt** | SPECIAL (1 Mana) | Solo gana **10 puntos de Estilo**. No cuenta como victoria, no cambia la racha |
 | Ice Shard | MAGIC · ICE | Como Magic, con elemento HIELO (para la debilidad del lobo) |
+| **Heal** | SPECIAL (1 Mana) | Recuperas **30 de vida**. Disponible desde el principio (en las dos versiones) |
+| **Void Impact** | ATTACK · VOID | 10 de daño; al jugarla pierdes 15 HP y quedas UNSTABLE; si gana, PARALYZE al rival y recuperas Stability. Se forja en el yunque de la aldea. Ojo: al Void Insect le **cura** |
 
 Mazo `elemental` (sigue existiendo para el duelo PvP; en el hospital no se usa):
 Attack x2, Fire Bolt, Ice Shard x2, Break, Guard, Perfect Guard, Recover y Taunt.
@@ -238,8 +261,8 @@ cuando se acaba el mazo, los descartes se barajan y una carta puede volver a sal
 Se guarda en `decks_hospital.json`, aparte de los mazos del duelo PvP
 (`combate/decks.json`), que siguen como siempre.
 
-Cartas **disponibles** (`AVAILABLE_CARDS`): las diez del mazo más Heavy Blow y
-Venom Strike. **Todas las demás están bloqueadas** (en gris, «BLOQUEADA», en el
+Cartas **disponibles** (`AVAILABLE_CARDS`): las diez del mazo más Heavy Blow,
+Venom Strike y Heal. **Todas las demás están bloqueadas** (en gris, «BLOQUEADA», en el
 editor). Algunas se consiguen en cofres del hospital: **Ice Shard** al fondo del
 Piso 1 y **Fire Bolt** al fondo del Piso 2 (`"card": "ice_shard"` en el cofre).
 
@@ -278,6 +301,66 @@ Solo datos, en la lista `interactables` del mapa (o con el diseñador):
 - `aggro`: distancia a la que te persigue (`0` = solo hay combate si lo tocas o le hablas).
 - `aggression` (−1 defensiva … 1 agresiva) y `randomness` (0 = siempre su mejor jugada) ajustan la IA (`combate/game/ai.py`).
 - `sprite`: `wolf_grey`, `shroom`, `npc_droid`, `wolf_ghost`, o cualquier PNG de `assets/` (p. ej. `assets/goblin.png` → `"sprite": "goblin"`).
+
+## Aldea del vacío (segunda versión)
+
+`python main_aldea.py`, `jugar_aldea.bat` o `AldeaDelVacio.exe`. Velmora es una
+aldea destruida, en llamas: un **insecto del vacío** ha dejado **huecos** a sus
+habitantes (no están muertos) y está abriendo un **portal en el cielo**. El mapa
+(`maps/aldea.json`) lo genera `python tools/generar_aldea.py`; la misión está en
+`systems/village_quest.py` y sus objetos en `entities/village.py`.
+
+**El mapa cambia con cada paso de la misión** (fases; ver «Mapas con fases»):
+
+| Fase | Qué hay que hacer | Cómo cambia el mapa |
+|---|---|---|
+| 1 · Los relojes | En la plaza hay **12 activadores del vacío**, uno por hora del reloj. En **3 casas** hay un **diario** con una hora: esas son las posiciones (14:00 = el 2, 9:00 = el 9, 0:00/12:00 = el 12). Hay que activar las tres, en cualquier orden; **una equivocada las apaga todas** | Barricadas en llamas cierran la granja, la herrería y el mercado; fuente seca en la plaza |
+| 2 · Las almas | Cada **herrero / granjero / vendedor** vencido da su **alma** (solo se lleva **una** a la vez; arriba a la izquierda se ve cuál). Hay que llevar **3 almas** de cada oficio a su **círculo del vacío**: herrero → herrería, granjero → granja, vendedor → mercado. **Un alma equivocada hace escapar todas las de ese círculo** | Se apagan las llamas; desaparecen los activadores; grietas del vacío en la plaza; aparecen los tres círculos |
+| 3 · El portal | Con **Hero** se salta de roca en roca (habilidad Saltar) hasta el portal. El **Void Insect** está tras una **barrera**: para romperla hace falta la carta **Void Impact**, que se forja en el **yunque** de la herrería con **3 partes del insecto** (pata, ala y aguijón) escondidas en **casas al azar**. Rota la barrera, se lucha con él (sin huida) | Los círculos se vuelven cristales; aparecen las **rocas flotantes** y los puntos de salto; las partes aparecen en las casas |
+| 4 · Fin | — | El portal se cierra y se apagan los fuegos |
+
+Los aldeanos **vuelven a aparecer** 40 s después de vencerlos (si estás lejos), así
+que nunca faltan almas. Son enemigos normales: deambulan, te persiguen y se puede huir.
+
+**Easter eggs** (siempre disponibles, en cualquier fase; las casas, barriles, pozos y
+el gallinero no se cierran nunca):
+
+1. **Peluches**: en 3 casas al azar hay un peluche con aura del vacío. Tocar los tres en
+   la misma partida: «Alguien te observa» (por ahora solo eso).
+2. **El pollo**: en el gallinero queda un único pollo. Cógelo (E) y llévalo a las
+   **semillas del vacío** que hay en **3 barriles al azar** (hay que romperlos; por
+   toda la aldea hay 14). Con las tres, **muta en un pollo humanoide y huye**. Si
+   empieza un combate mientras lo llevas, **huye de vuelta al gallinero** (las
+   semillas que ya se comió cuentan).
+3. **El pozo**: hay 3 pozos; en uno al azar, a la **3ª vez** que te asomas la pantalla
+   se pone negra unos segundos y vuelves al principio: «Buen intento».
+
+Todo lo aleatorio (horas, casas de diarios / peluches / partes, barriles, pozo) **cambia
+en cada partida** (`VILLAGE_SEED` en `game/settings.py` lo fija para las pruebas).
+
+### Enemigos de la aldea
+
+| Enemigo | Dónde | Personaje / mazo |
+|---|---|---|
+| **Herrero** | Herrería y calles | Corrupted; mazo `herrero` (martillazos, chispas de la forja, acero templado), 100 HP |
+| **Granjero** | Granja y calles | Corrupted; mazo `granjero` (horca, guadaña, cosecha podrida, Harvest), 100 HP |
+| **Vendedor** | Mercado y calles | Corrupted; mazo `vendedor` (monedas, regateo, sobornos), 100 HP |
+| **Void Insect** (jefe) | La roca más alta, junto al portal (quieto, tras su barrera) | Void insect; mazo `void_insect` (aguijones y zumbidos que quitan Mana máximo), 100 HP, sin huida |
+
+Detalles de las pasivas y las cartas en `combate/README.md` («Personajes» y «Cartas»).
+
+### Mapas con fases
+
+Un mapa con `"phase_flag": "<flag>"` cambia según `GameState.get_flag(flag)`.
+Cualquier zona caminable (`{"rect": [...], "phases": [3, 4]}`), muro, obstáculo,
+decoración, interactuable, trigger o área / camino / detalle del suelo puede llevar
+`"phases": [...]`: solo existe en esas fases. Al cambiar la fase, `GameMap.apply_phase`
+rehace la colisión y el juego repinta el suelo (`Game.on_phase_changed`); si algo
+sólido aparece encima del jugador, se le aparta. Objetos nuevos (`entities/village.py`):
+`phase_block` (llamas / cristales que cierran un paso), `clock_activator`,
+`village_item` (diario, peluche o parte en una casa), `void_circle`, `anvil`,
+`void_barrier`, `barrel`, `chicken` y `well`. Enemigos: `"respawn": segundos`,
+`"soul": "herrero"` y `"requires_secret"` (no hay combate hasta desbloquearlo).
 
 ## Qué hay en el mapa
 
@@ -364,6 +447,7 @@ muros `"style": "cave"`, caminos `"style": "cave"` y detalle de suelo `puddles`.
 
 ```
 main.py                     punto de entrada (jugar.bat: doble clic)
+main_aldea.py               punto de entrada de la Aldea del vacío (jugar_aldea.bat)
 game/
   game.py                   bucle principal; también es el "contexto" de interacción
   battle_scene.py           combate dentro de la exploración (usa combate/)
@@ -379,6 +463,7 @@ entities/
   enemy.py                  enemigo del mapa: se mueve, te persigue y abre el combate
   adventure.py              objetos de habilidades de aventura: pared de hojas (Blaze), punto de salto (Hero)
   hospital.py               ascensor, máquinas de ventajas, pintada con la secuencia, Pack-a-Punch
+  village.py                objetos de la Aldea del vacío (reloj, círculos, yunque, barrera, pollo...)
   props.py                  árboles, rocas, muros (definidos como datos)
 world/
   map.py                    GameMap (walls, obstacles, interactables, exits, secrets...)
@@ -391,9 +476,11 @@ systems/
   secret_system.py          registro global de secretos
   game_state.py             flags, inventario provisional, estado por mapa
   perk_puzzle.py            puzle de las máquinas de ventajas
+  village_quest.py          misión de la Aldea del vacío por fases y sus easter eggs
 render/
   assets.py                 AssetManager (PNG o placeholder)
   placeholders.py           gráficos provisionales (solo dibujo)
+  village_sprites.py        gráficos provisionales de la aldea (aldeanos huecos, Void Insect...)
   ground.py                 pinta el suelo una vez
   renderer.py               orden por Y, sombras, transparencias, follaje
 ui/
@@ -404,6 +491,7 @@ maps/
   forest.json               el Bosque de Arken
   hospital_*.json           el hospital abandonado (hospital_exterior: la caverna; el resto, generados)
   elevators.json            pisos del ascensor y la energía que pide cada uno
+  aldea.json                la Aldea del vacío (generada)
 assets/                     PNG opcionales (ver assets/README.md)
 combate/                    el proyecto combate-cartas, como paquete (ver combate/README.md)
   game/ai.py                IA de los enemigos (nuevo)
@@ -413,10 +501,12 @@ disenador-de-niveles/       editor visual de mapas (HTML)
 tests/
   smoke_test.py             exploración
   hospital_test.py          el hospital entero
+  aldea_test.py             la Aldea del vacío entera
   pathing.py                buscador de caminos de las pruebas (¿se puede llegar de A a B?)
 tools/
   generar_hospital.py       genera los pisos del hospital
-  build_exe.py              genera dist/HospitalAbandonado.exe (solo el hospital)
+  generar_aldea.py          genera la Aldea del vacío
+  build_exe.py              genera dist/HospitalAbandonado.exe (o AldeaDelVacio.exe con --aldea)
   battle_test.py            exploración + combate
 ```
 
@@ -431,6 +521,8 @@ jugador 2 lo controla `CardAI` y la pantalla oculta su mano
 Cambios respecto a los originales: los imports del combate llevan el prefijo
 `combate.` (para no chocar con los paquetes `game` y `ui` de la exploración),
 `combate/ui/battle_screen.py` admite jugadores de la IA y un botón CONTINUAR,
+el centro de la pantalla es un escenario con los personajes animados
+(`combate/ui/fighters.py`; `View.fighter_keys` elige el sprite de cada uno)
 y los mapas tienen enemigos. Todo lo demás es igual.
 
 **Orden de cada frame** (`Game.step` / `Game.draw`): input → jugador → colisión →

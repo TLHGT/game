@@ -529,7 +529,7 @@ class TestReplacementAndImmunity(unittest.TestCase):
         """Sin RNG ni elementos: solo las cartas con APPLY_STATUS aplican estados."""
         with_status = {d["id"] for d in CARD_DATA if any(x["type"] == "APPLY_STATUS" for x in d.get("effects", []))}
         self.assertEqual(with_status, {"flame", "searing_break", "venom_strike", "stun_guard", "frost_guard",
-                                       "lullaby"})
+                                       "lullaby", "void_impact"})
         for deck in ("duelo", "starter", "laboratorio"):
             self.assertFalse(with_status & set(DECKS[deck]), deck)
             e = CombatEngine(decks=(deck, deck), seed=3)

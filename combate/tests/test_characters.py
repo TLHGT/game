@@ -243,7 +243,8 @@ class TestCharacterSystem(unittest.TestCase):
     def test_registry(self):
         self.assertEqual(set(playable_characters()), {"blaze", "hero", "jurgenoid"})
         self.assertEqual(set(CHARACTERS) - set(playable_characters()),
-                         {"security_droid", "elemental_wolf", "fire_wolf", "ice_wolf"},
+                         {"security_droid", "elemental_wolf", "fire_wolf", "ice_wolf",
+                          "herrero", "granjero", "vendedor", "void_insect"},
                          "Los enemigos son personajes, pero no jugables")
         for ch in CHARACTERS.values():
             self.assertTrue(ch.name and ch.description and ch.passive_id in PASSIVES)

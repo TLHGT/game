@@ -12,7 +12,7 @@ from combate.game.rules import DRAW, resolve_interaction
 class TestDatabase(unittest.TestCase):
     def test_every_damage_card_declares_its_damage(self):
         damage_cards = [d for d in CARD_DATA if d["card_type"] in DAMAGE_TYPES]
-        self.assertEqual(len(damage_cards), 14)
+        self.assertEqual(len(damage_cards), 15)     # + Void Impact (aldea)
         for data in damage_cards:
             self.assertEqual(data["damage"], 10, data["id"])
             self.assertEqual(make_card(data["id"]).damage, 10, data["id"])

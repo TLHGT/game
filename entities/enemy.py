@@ -21,7 +21,10 @@ JSON (lista `interactables` del mapa):
       "victory": ["Texto al vencerlo"],
       "unlocks_secret": "id_secreto",    (opcional: se desbloquea al vencerlo)
       "reward": {"item": "potion", "name": "Poción"},
-      "can_flee": true, "vanish": true
+      "can_flee": true, "vanish": true,
+      "respawn": 40,                     (opcional: segundos hasta que vuelve tras vencerlo)
+      "soul": "herrero",                 (opcional: alma que suelta en la Aldea del vacío)
+      "requires_secret": "id_secreto"    (opcional: no hay combate hasta desbloquearlo)
     }
 """
 import math
@@ -34,6 +37,7 @@ from world.collision import move_and_collide
 
 CONTACT_MARGIN = 6       # px alrededor de la hitbox para considerar que te ha tocado
 REENGAGE_DELAY = 3.0     # segundos sin atacar tras huir / perder
+RESPAWN_DISTANCE = 360   # un enemigo con "respawn" no reaparece si el jugador está más cerca
 
 
 class Enemy(Interactable):
@@ -42,7 +46,8 @@ class Enemy(Interactable):
     def __init__(self, x, y, obj_id, name, sprite="wolf_grey", deck="duelo", character=None,
                  hp=None, aggression=0.0, randomness=0.6, behavior="wander", radius=120,
                  patrol=None, aggro=170, speed=80, intro=None, victory=None,
-                 unlocks_secret=None, reward=None, can_flee=True, vanish=True):
+                 unlocks_secret=None, reward=None, can_flee=True, vanish=True, respawn=None, soul=None,
+                 requires_secret=None):
         hb = SPRITE_HITBOX.get(sprite, (30, 14))
         super().__init__(x, y, obj_id, name, sprite, hitbox=hb, solid=False, shadow=(hb[0] + 8, 12))
         self.home = pygame.Vector2(x, y)
@@ -62,8 +67,13 @@ class Enemy(Interactable):
         self.reward = reward
         self.can_flee = can_flee
         self.vanish = vanish
+        self.respawn = respawn
+        self.soul = soul
+        self.requires_secret = requires_secret
 
         self.defeated = False
+        self.respawn_left = 0.0
+        self._secret_ok = requires_secret is None
         self.cooldown = 0.0
         self.chasing = False
         self.facing_left = False
@@ -75,7 +85,7 @@ class Enemy(Interactable):
 
     # --- Interacción ------------------------------------------------------
     def can_interact(self):
-        return super().can_interact() and not self.defeated
+        return super().can_interact() and not self.defeated and self._secret_ok
 
     def interact(self, ctx):
         ctx.start_battle(self)
@@ -89,6 +99,10 @@ class Enemy(Interactable):
             ctx.notify(f"Obtienes: {self.reward.get('name', self.reward['item'])}", "discovery")
         if self.unlocks_secret:
             ctx.unlock_secret(self.unlocks_secret)
+        if self.soul:
+            ctx.on_soul_dropped(self.soul)
+        if self.respawn:
+            self.respawn_left = float(self.respawn)
 
     def on_escaped(self):
         """El jugador huyó o perdió: un respiro antes de volver a atacar."""
@@ -104,11 +118,15 @@ class Enemy(Interactable):
     # --- Movimiento ---------------------------------------------------------
     def update(self, dt, ctx):
         self._t += dt
+        if self.requires_secret:
+            self._secret_ok = ctx.secrets.is_unlocked(self.requires_secret)
         if self.defeated:
+            if self.respawn:
+                self._update_respawn(dt, ctx)
             return
         self.cooldown = max(0.0, self.cooldown - dt)
         moving = False
-        if not ctx.busy:
+        if not ctx.busy and self._secret_ok:
             moving = self._think(dt, ctx)
             if self.cooldown <= 0 and self.rect.inflate(CONTACT_MARGIN * 2, CONTACT_MARGIN * 2) \
                     .colliderect(ctx.player.rect):
@@ -116,6 +134,19 @@ class Enemy(Interactable):
                 return
         bob = math.sin(self._t * (9 if moving else 2.5)) * (2 if moving else 1)
         self.sprite_offset = (0, round(bob))
+
+    def _update_respawn(self, dt, ctx):
+        """Vuelve a su sitio cuando pasa su tiempo y el jugador no está cerca."""
+        self.respawn_left = max(0.0, self.respawn_left - dt)
+        far = self.home.distance_to((ctx.player.x, ctx.player.y)) > RESPAWN_DISTANCE
+        if self.respawn_left <= 0 and far and not ctx.busy:
+            self.defeated = False
+            self.x, self.y = self.home.x, self.home.y
+            self.chasing = False
+            self._target = None
+            self.cooldown = REENGAGE_DELAY
+            self._apply_defeated()
+            self.visible = True
 
     def _think(self, dt, ctx):
         pos = pygame.Vector2(self.x, self.y)
@@ -173,10 +204,11 @@ class Enemy(Interactable):
 
     # --- Estado (sobrevive al cambiar de mapa) ---------------------------------
     def get_state(self):
-        return {"defeated": self.defeated}
+        return {"defeated": self.defeated, "respawn_left": self.respawn_left}
 
     def set_state(self, state):
         self.defeated = state.get("defeated", False)
+        self.respawn_left = state.get("respawn_left", 0.0)
         self._apply_defeated()
 
     @classmethod
@@ -187,7 +219,7 @@ class Enemy(Interactable):
                   d.get("behavior", "wander"), d.get("radius", 120), d.get("patrol"),
                   d.get("aggro", 170), d.get("speed", 80), d.get("intro"), d.get("victory"),
                   d.get("unlocks_secret"), d.get("reward"), d.get("can_flee", True),
-                  d.get("vanish", True))
+                  d.get("vanish", True), d.get("respawn"), d.get("soul"), d.get("requires_secret"))
         if d.get("verb"):
             obj.prompt_verb = d["verb"]
         return obj

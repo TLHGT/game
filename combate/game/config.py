@@ -49,6 +49,7 @@ class RulesConfig:
 
     # --- Mana ---------------------------------------------------------------
     MAX_MANA: int = 5
+    MIN_MAX_MANA: int = 1               # tope mínimo si un efecto reduce el Mana máximo
     STARTING_MANA: int = 3
     MANA_REGEN: int = 1
     REGEN_ON_FIRST_TURN: bool = False   # el turno 1 se juega con STARTING_MANA

@@ -1,10 +1,12 @@
-"""Genera dist/HospitalAbandonado.exe: el juego del hospital en un solo archivo.
+"""Genera un ejecutable de Windows de un solo archivo para cada versión del juego.
 
-    python tools/build_exe.py
+    python tools/build_exe.py            # dist/HospitalAbandonado.exe (el hospital)
+    python tools/build_exe.py --aldea    # dist/AldeaDelVacio.exe (la Aldea del vacío)
 
-Requiere `pip install pyinstaller`. Solo empaqueta los mapas del hospital
-(hospital_*.json + elevators.json) y assets/; el .exe arranca en la caverna.
-Los mazos editados se guardan en decks_hospital.json junto al .exe.
+Requiere `pip install pyinstaller`. Cada .exe solo empaqueta sus mapas y assets/:
+el del hospital, hospital_*.json + elevators.json (arranca en la caverna); el de
+la aldea, aldea.json (arranca en la entrada de la aldea). Los mazos editados se
+guardan junto al .exe: decks_hospital.json o decks_aldea.json.
 """
 import glob
 import os
@@ -13,17 +15,21 @@ import sys
 import PyInstaller.__main__
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NAME = "HospitalAbandonado"
+VERSIONS = {
+    "hospital": dict(name="HospitalAbandonado", entry="main.py",
+                     maps=["hospital_*.json", "elevators.json"]),
+    "aldea": dict(name="AldeaDelVacio", entry="main_aldea.py", maps=["aldea.json"]),
+}
 
 
 def main():
-    maps = glob.glob(os.path.join(ROOT, "maps", "hospital_*.json"))
-    maps.append(os.path.join(ROOT, "maps", "elevators.json"))
+    version = VERSIONS["aldea" if "--aldea" in sys.argv else "hospital"]
+    maps = [m for pattern in version["maps"] for m in glob.glob(os.path.join(ROOT, "maps", pattern))]
     datas = [f"--add-data={m}{os.pathsep}maps" for m in maps]
     datas.append(f"--add-data={os.path.join(ROOT, 'assets')}{os.pathsep}assets")
     PyInstaller.__main__.run([
-        os.path.join(ROOT, "main.py"),
-        f"--name={NAME}",
+        os.path.join(ROOT, version["entry"]),
+        f"--name={version['name']}",
         "--onefile",
         "--windowed",
         "--noconfirm",
@@ -36,7 +42,7 @@ def main():
         "--collect-submodules=combate",
         *datas,
     ])
-    print(f"\nListo: {os.path.join(ROOT, 'dist', NAME + '.exe')}")
+    print(f"\nListo: {os.path.join(ROOT, 'dist', version['name'] + '.exe')}")
 
 
 if __name__ == "__main__":

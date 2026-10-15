@@ -71,12 +71,16 @@ HOSPITAL_DECK = ["attack", "guard", "break", "magic", "perfect_guard", "recover"
                  "stun_guard", "revenge", "overdrive"]
 DECKS_PATH = os.path.join(_EXE_DIR, "decks_hospital.json")
 # Cartas disponibles desde el principio. Todas las demás empiezan BLOQUEADAS; algunas
-# se consiguen en cofres del hospital (Ice Shard en el piso 1, Fire Bolt en el piso 2).
+# se consiguen en cofres del hospital (Ice Shard en el piso 1, Fire Bolt en el piso 2)
+# o en la aldea (Void Impact, forjada en el yunque).
 AVAILABLE_CARDS = ("attack", "guard", "break", "magic", "perfect_guard", "recover", "taunt",
-                   "stun_guard", "revenge", "overdrive", "heavy_blow", "venom_strike")
+                   "stun_guard", "revenge", "overdrive", "heavy_blow", "venom_strike", "heal")
 # Puzle de las máquinas de ventajas: None = secuencia aleatoria en cada partida;
 # p. ej. (2, 4, 1, 3) la fija (pruebas).
 PERK_SEQUENCE = None
+# Aldea del vacío (maps/aldea.json): None = sorteo nuevo en cada partida (horas de los
+# diarios, casas, barriles, pozo...); un número lo fija (pruebas).
+VILLAGE_SEED = None
 PLAYER_CHARACTER = "hero"     # personajes jugables: "hero" o "blaze"
 PLAYER_COMBAT_NAME = "TÚ"     # nombre del jugador en la pantalla de combate
 ENEMIES_ENABLED = True        # False: los mapas se cargan sin enemigos (pruebas de exploración)
@@ -84,3 +88,14 @@ BATTLE_FADE_SPEED = 5.0       # fundido al empezar un combate (por segundo)
 
 # --- Debug -----------------------------------------------------------------
 DEBUG_START_ENABLED = False
+
+
+# --- Versiones ---------------------------------------------------------------
+def use_village():
+    """Versión «Aldea del vacío» (main_aldea.py, AldeaDelVacio.exe): empieza en la
+    aldea y guarda su mazo aparte (decks_aldea.json). El código es el mismo."""
+    global START_MAP, TITLE, PLAYER_DECK, DECKS_PATH
+    START_MAP = "aldea"
+    TITLE = "Aldea del vacío - Exploración y combate de cartas"
+    PLAYER_DECK = "aldea"
+    DECKS_PATH = os.path.join(_EXE_DIR, "decks_aldea.json")

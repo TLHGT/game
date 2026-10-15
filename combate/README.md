@@ -71,6 +71,37 @@ El mazo por defecto se cambia en `DEFAULT_DECKS` (`game/config.py`).
 - **SPECIAL**: con las mismas teclas. Pulsar una carta SPECIAL (morada, como Recover) la añade a tu jugada; si la pulsas otra vez, la quitas. Pulsar cualquier otra carta, o PASS, elige tu acción principal. Después confirmas.
 - Confirmar durante una animación la acelera. `R` / `ENTER`: revancha. `M`: menú. `ESC`: volver al menú (en el menú, salir).
 
+## Escenario y animaciones
+
+En el centro de la pantalla hay un **suelo** con los dos personajes encima
+(jugador 1 a la izquierda, jugador 2 a la derecha, mirándose) y, a cada lado,
+la carta que ha jugado cada uno (boca abajo mientras eligen, se voltea al
+revelar). Debajo del suelo sale el POR QUÉ ganó. Lo dibuja `ui/fighters.py`.
+
+| Momento | Pose / animación |
+|---|---|
+| STABLE | Erguido, respirando. Aro verde en el suelo |
+| UNSTABLE | Agachado y tambaleándose, estrellitas de mareo y gota de sudor. Aro rojo que late |
+| Cambio de cartas (REDRAW) | Algo echado hacia atrás con un abanico de cartas en la mano: una sale volando y entra otra. Al terminar, «LISTO» |
+| Carta ATTACK | Amago hacia atrás, embestida y tajo |
+| Carta MAGIC | Aura, empuje y un orbe que cruza el escenario hasta el rival |
+| Carta BREAK | Se agacha, salta hacia delante y cae con una onda en el suelo |
+| Carta GUARD | Retrocede un paso y levanta un escudo, que destella si le llega un golpe |
+| Pierde la interacción **y recibe hit** | Sale despedido hacia atrás, destello blanco, parpadeo rojo y chispas. Su propia animación se corta en ese instante |
+| MEGA COMBO | Quien lo activa encadena tres embestidas; el rival recibe tres golpes |
+| Fin de la partida | El perdedor cae de espaldas (K.O.) y el ganador da saltitos |
+| FREEZE | Encerrado en un cubo de hielo (en perspectiva), inmóvil y azulado |
+| SLEEP | Cabecea despacio y le salen «Z» flotando |
+| PARALYZE | Rayitos amarillos que chisporrotean a su alrededor y tirones de calambre |
+| BURN | Llamitas que suben por el cuerpo |
+| POISON | Burbujas moradas que suben y revientan |
+
+Las animaciones no guardan estado: se calculan cada frame a partir de la fase
+y del tiempo que lleva (`View.phase_time`), así que van siempre sincronizadas
+con la resolución. Los sprites son los del mapa (avatar del personaje,
+`<avatar>_right_0`, o el que fije la escena en `View.fighter_keys`); el de la
+derecha se voltea. Sin sprite disponible se dibuja una silueta.
+
 ## Reglas
 
 ### Cada carta tiene cuatro cosas independientes
@@ -144,14 +175,34 @@ cartas y reglas que todos.
 **Personajes de enemigos**: `Character(..., playable=False)`. Tienen pasiva como
 cualquier otro, pero no salen en los menús de selección (`playable_characters()`).
 De momento: **Dron de seguridad** (Alerta: cada 3 turnos deja UNSTABLE al rival),
-**Elemental Wolf** (afinidad FUEGO/HIELO: su elemento le cura, el contrario x1.5,
-golpearle con ATTACK quema o congela), y **Fire Wolf** / **Ice Wolf** (pasiva
+**Elemental Wolf** (afinidad FUEGO/HIELO: su elemento le cura, el contrario x1.5, sin elemento u
+otro elemento x0.5; golpearle con ATTACK quema o congela), y **Fire Wolf** / **Ice Wolf** (pasiva
 `element_ward`, «Fire element» / «Ice element»: el daño de cartas de su elemento le
 cura, el del elemento contrario es normal y el de cartas sin elemento o de otro
 elemento se reduce a la mitad, medios hacia arriba; el Mega Combo no es una carta
 y hace el daño normal). Mazos `fire_wolf` y `ice_wolf` en `ENEMY_DECKS`. Sus cartas exclusivas (`ENEMY_CARD_DATA`) y
 mazos (`ENEMY_DECKS`) no están en el catálogo ni en `DECKS`. Ganchos de pasiva
-nuevos: `incoming_damage`, `on_turn_start`, `after_interaction`, `set_affinity`.
+nuevos: `incoming_damage`, `on_turn_start`, `after_interaction`, `set_affinity`,
+`on_defeat`.
+
+**Enemigos de la Aldea del vacío**:
+
+| Personaje | Pasiva | Efecto |
+|---|---|---|
+| **Herrero**, **Granjero**, **Vendedor** (aldeanos huecos) | **Corrupted** | La primera vez que se quedan a 0 HP recuperan el **50%** de su vida máxima y se **transforman** (nombre «… CORRUPTO» y otro sprite, con tentáculos y ojos de más). Transformados, cada interacción que **ganan haciendo HIT** te quita **1 de Mana máximo** (nunca baja de 1) |
+| **Void Insect** (jefe) | **Void insect** | **Part of the void** (todo el combate): el daño de cartas **VOID** le **cura el doble**. **Void breeding**: cada HIT recibido le da **1 carga** (máx. 10). A 0 HP aparecen **dos crías**, una tras otra, con **cargas x10 / 2 HP** cada una (10 cargas = 50 HP; sin cargas no hay crías), solo con Part of the void. Después vuelve con el **50%** de su vida: **Void consumption**, cada interacción que gana con HIT te quita el **20% de tu vida máxima** |
+
+Todo el jefe es **un solo combate**: tu vida y tu Mana siguen igual entre etapas. Al
+cambiar de etapa (o al transformarse un aldeano) el luchador nuevo empieza sin
+estado alterado, STABLE y sin combo, pero las consecuencias del golpe que tumbó a la
+forma anterior (desestabilizar, un Mega Combo) le llegan igual.
+
+- `on_defeat(owner, engine)` se llama en cuanto el dueño se queda a 0 HP (daño de
+  interacción, de estados o de una carta); puede llamar a
+  `engine.transform(i, hp, max_hp, name, sprite, text)` para seguir en pie con otra forma.
+  La pantalla cambia el sprite con el evento `transform`.
+- `engine.reduce_max_mana(i, n)` y `engine.reduce_max_hp(i, pct)`: el HUD tacha los
+  huecos de Mana y el tramo de vida máxima perdidos.
 
 **Cartas bloqueadas** (solo en la exploración): `DeckEditor(store, locked=...)`
 recibe las cartas que aún no se pueden usar; salen en gris en el catálogo, no se
@@ -266,6 +317,7 @@ carta (ATTACK, GUARD o BREAK, da igual cuál) gastas 1 Mana. PASS nunca cuesta.*
 ```
 MANA
 ├── Máximo 5 · inicio de partida 3 · +1 al empezar cada turno (nunca durante el turno)
+│   (algunos enemigos de la aldea reducen el máximo de su rival: Player.max_mana, nunca menos de 1)
 ├── INTERACCIÓN 1 del turno:  ATTACK / GUARD / BREAK / PASS → GRATIS
 ├── INTERACCIÓN 2+:           ATTACK / GUARD / BREAK → 1 MANA · PASS → GRATIS
 ├── SPECIAL (opcional):       siempre 1 MANA, se suma a lo anterior
@@ -393,6 +445,38 @@ En pantalla, el **daño normal** sale en rojo durante la resolución (`PLAYER 2 
 | **Flame** | **SPECIAL** | No | Si ganas la interacción con una carta MAGIC: BURN al rival |
 | Ice Shard | MAGIC | Sí | Como Magic, con elemento ICE (sin estados) |
 | **Taunt** | **SPECIAL** | No | Solo gana 10 puntos de Estilo (sin contar como victoria ni tocar la racha) |
+| **Heal** | **SPECIAL** | No | Recuperas **30 de vida** (hasta tu vida máxima). Disponible desde el principio en la exploración |
+| **Void Impact** | ATTACK · VOID | Sí | 10 de daño, hit, desestabiliza y **recupera Stability si gana**. Al jugarla **pierdes 15 HP** y **quedas UNSTABLE** (gane, pierda o empate); si gana, **PARALYZE** al rival. Se forja en el yunque de la aldea |
+
+Cartas **exclusivas** de los enemigos de la aldea (`ENEMY_CARD_DATA`):
+
+| Enemigo | Carta | Tipo | Efecto |
+|---|---|---|---|
+| Herrero | Hammer Blow | BREAK | Si gana: +5 de daño |
+| Herrero | Forge Spark | ATTACK · FIRE | Si gana: BURN |
+| Herrero | Tempered Steel | GUARD | Si gana desestabiliza; si pierde no pierde Stability |
+| Granjero | Pitchfork | ATTACK | Prioridad 1 |
+| Granjero | Scythe Sweep | BREAK | Si vence a GUARD: +1 hit |
+| Granjero | Rotten Crop | MAGIC | Si gana: POISON |
+| Granjero | Harvest | SPECIAL | Recupera 10 de vida |
+| Vendedor | Coin Toss | MAGIC | Si gana: +1 Mana |
+| Vendedor | Haggle | SPECIAL | Al revelar: el rival pierde 1 Mana |
+| Vendedor | Bribe | GUARD | Si gana: el rival pierde 1 Mana |
+| Void Insect | Void Sting | ATTACK · VOID | Si gana: el rival pierde 1 de Mana máximo |
+| Void Insect | Mana Leech | MAGIC · VOID | Si gana: el rival pierde 1 Mana y el insecto gana 1 |
+| Void Insect | Chitin Shell | GUARD | Si gana desestabiliza; si pierde no pierde Stability |
+| Void Insect | Void Buzz | SPECIAL | Si su acción principal hace HIT: el rival pierde 1 de Mana máximo |
+
+Mazos (`ENEMY_DECKS`): `herrero` (Hammer Blow x2, Forge Spark x2, Tempered Steel x2,
+Break Guard, Iron Stance, Attack, Guard), `granjero` (Pitchfork x2, Scythe Sweep x2,
+Rotten Crop, Harvest x2, Guard x2, Recover), `vendedor` (Coin Toss x2, Haggle x2,
+Bribe x2, Feint, Parry, Attack, Guard) y `void_insect` (Void Sting x3, Mana Leech x2,
+Chitin Shell x2, Void Buzz, Break, Guard).
+
+Efectos nuevos: `HEAL` (`amount`), `SELF_DAMAGE` (`amount`, no es HIT ni pasa por las
+pasivas), `SELF_UNSTABLE` (queda UNSTABLE quien la juega, salvo que gane y la carta
+recupere Stability) y `REDUCE_MAX_MANA` (`amount`; como `APPLY_STATUS`, se aplica tras
+el daño y admite `if_outcome` / `if_hit`). Elemento nuevo: **VOID** (VACÍO).
 
 ### Status Effects (estados alterados)
 
@@ -470,9 +554,9 @@ cards/
   deck.py                  mazo + descarte
   deck_store.py            mazos editados: decks.json (fábrica / modificado / propio)
 players/player.py          HP, Mana, Stability, mano...
-ui/                        battle_screen, menu_screen, deck_screen, character_widget, style_widget, card_widget, player_hud, status_widget, animations, theme
+ui/                        battle_screen, menu_screen, deck_screen, character_widget, style_widget, card_widget, player_hud, status_widget, animations, fighters (escenario y personajes), theme
 tests/
-  test_combat.py, test_stability.py, test_cards.py, test_mana.py, test_special.py, test_status.py, test_magic.py, test_decks.py, test_characters.py, test_style.py   (290 tests)
+  test_combat.py, test_stability.py, test_cards.py, test_mana.py, test_special.py, test_status.py, test_magic.py, test_decks.py, test_characters.py, test_style.py, test_fighters.py   (290 tests)
   ui_scenarios.py          los ejemplos del documento, jugados por la UI
   ui_smoke.py              partida completa por la UI
   ui_decks.py              menú y editor de mazos por la UI
@@ -485,7 +569,8 @@ importa Pygame**.
 
 ```bash
 cd tests
-python -m unittest                  # 290 tests (reglas, estados, MAGIC, mazos, personajes, Estilo)
+python -m unittest                  # 381 tests (reglas, estados, MAGIC, mazos, personajes, Estilo;
+                                    #   test_aldea.py: Heal, Void Impact, Corrupted, Void Insect)
 python ui_scenarios.py --shots      # Attack/Guard, Perfect Guard, Unbreakable Guard... por la UI
 python ui_smoke.py --shots          # partida completa por la UI + capturas en tests/shots/
 python ui_decks.py --shots          # menú (personajes y mazos) y editor de mazos por la UI (decks.json temporal)

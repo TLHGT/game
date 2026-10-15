@@ -25,6 +25,18 @@ PROP_TYPES = {
     "cave_rock":     dict(sprite="cave_rock_{v}", variants=2, hitbox=(36, 16), shadow=(48, 14), solid=True),
     "crystal":       dict(sprite="crystal_{v}", variants=2, hitbox=(26, 12), shadow=(30, 10), solid=True),
     "glowshroom":    dict(sprite="glowshroom", hitbox=(0, 0), shadow=None, solid=False),
+    # Aldea del vacío (render/village_sprites.py)
+    "dead_tree":     dict(sprite="dead_tree_{v}", variants=3, hitbox=(20, 12), shadow=(44, 14), solid=True, fade=True),
+    "flames":        dict(sprite="flames_{v}", variants=3, hitbox=(0, 0), shadow=None, solid=False),
+    "fountain":      dict(sprite="fountain", hitbox=(96, 30), shadow=None, solid=True),
+    "void_crystal":  dict(sprite="void_crystal_{v}", variants=3, hitbox=(40, 16), shadow=None, solid=True),
+    "void_crystal_deco": dict(sprite="void_crystal_{v}", variants=3, hitbox=(0, 0), shadow=None, solid=False),
+    "void_portal":   dict(sprite="void_portal", hitbox=(0, 0), shadow=None, solid=False),
+    "haystack":      dict(sprite="haystack", hitbox=(50, 18), shadow=(56, 14), solid=True),
+    "market_stall":  dict(sprite="market_stall", hitbox=(84, 18), shadow=(88, 14), solid=True, fade=True),
+    "forge":         dict(sprite="forge", hitbox=(68, 20), shadow=(74, 14), solid=True, fade=True),
+    "crate":         dict(sprite="crate", hitbox=(34, 14), shadow=(38, 10), solid=True),
+    "gravestone":    dict(sprite="gravestone", hitbox=(24, 10), shadow=(28, 8), solid=True),
 }
 
 
